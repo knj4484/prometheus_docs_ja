@@ -1,53 +1,43 @@
 ---
-title: Recording rules
+title: レコーディングルール
 sort_rank: 6
 ---
 
-# Recording rules
+# レコーディングルール
 
-A consistent naming scheme for [recording rules](/docs/prometheus/latest/configuration/recording_rules/)
-makes it easier to interpret the meaning of a rule at a glance. It also avoids
-mistakes by making incorrect or meaningless calculations stand out.
+[レコーディングルール](/docs/prometheus/latest/configuration/recording_rules/)の一貫した命名体系によって、ルールの意味を一目で理解することが簡単になる。
+また、不正確だったり意味のない計算が目立つようになり、間違いを避けることができる。
 
-This page documents how to correctly do aggregation and suggests a naming
-convention.
+このページは、集約を正しく行うにはどうすればいいかを記し、また命名規約を提示する。
 
-## Naming and aggregation
+## 命名と集約
 
-Recording rules should be of the general form `level:metric:operations`.
-`level` represents the aggregation level and labels of the rule output.
-`metric` is the metric name and should be unchanged other than stripping
-`_total` off counters when using `rate()` or `irate()`. `operations` is a list
-of operations that were applied to the metric, newest operation first.
+レコーディングルールは、一般的な形式`level:metric:operations`になっているべきである。
+`level`は、集約レベルおよび出力されるラベルを表す。
+`metric`は、メトリック名で、`rate()`や`irate()`を利用した時に`_total`を削除する以外は、変更するべきではない。
+`operations`は、メトリックに適用された演算のリストで、もっとも新しい演算が一番先頭に来る。
 
-Keeping the metric name unchanged makes it easy to know what a metric is and
-easy to find in the codebase.
+メトリック名を変更せずにしておくことで、メトリックが何か知ることが簡単になり、コードベースでの検索も簡単になる。
 
-To keep the operations clean, `_sum` is omitted if there are other operations,
-as `sum()`. Associative operations can be merged (for example `min_min` is the
-same as `min`).
+operationsを綺麗に保つために、`sum()`以外の演算がある場合は`_sum`を省略する。
+結合性のある演算はまとめて良い（例えば、`min_min`は`min`と同じである）。
 
-If there is no obvious operation to use, use `sum`.  When taking a ratio by
-doing division, separate the metrics using `_per_` and call the operation
-`ratio`.
+利用すべき明らかな演算がない場合、`sum`を使う。
+割り算をして比を取る場合、メトリクス名を`_per_`で区切り、演算は`ratio`とする。
 
-When aggregating up ratios, aggregate up the numerator and denominator
-separately and then divide. Do not take the average of a ratio or average of an
-average as that is not statistically valid.
+比を集約する場合、分母と分子を別々に集約した後、割り算をすること。
+統計的に妥当ではないので、比の平均を取ったり、平均の平均をとったりしないように。
 
-When aggregating up the `_count` and `_sum` of a Summary and dividing to
-calculate average observation size, treating it as a ratio would be unwieldy.
-Instead keep the metric name without the `_count` or `_sum` suffix and replace
-the `rate` in the operation with `mean`. This represents the average
-observation size over that time period.
+観測値の平均を計算するために、サマリーの`_count`や`_sum`を集約し、割り算をする際に、それを比として扱うのは不恰好であろう。
+代わりに、`_count`や`_sum`という接尾辞をなくして、`rate`を`mean`で置き換えること。
+これで、その時間幅の平均的な観測値を表している。
 
-Always specify a `without` clause with the labels you are aggregating away.
-This is to preserve all the other labels such as `job`, which will avoid
-conflicts and give you more useful metrics and alerts.
+集約後に消したいラベルを`without`で常に指定すること。
+これは、`job`などの他の全てのラベルを保持することになり、コンフリクトを回避し、より有益なメトリクスやアラートが得られる。
 
-## Examples
+## 例
 
-Aggregating up requests per second that has a `path` label:
+ラベル`path`を持つ秒間リクエストを集約する
 
 ```
 - record: instance_path:requests:rate5m
@@ -57,7 +47,7 @@ Aggregating up requests per second that has a `path` label:
   expr: sum without (instance)(instance_path:requests:rate5m{job="myjob"})
 ```
 
-Calculating a request failure ratio and aggregating up to the job-level failure ratio:
+リクエストと失敗の比を計算し、jobレベルの失敗の比に集約する。
 
 ```
 - record: instance_path:request_failures:rate5m
@@ -71,7 +61,7 @@ Calculating a request failure ratio and aggregating up to the job-level failure 
         instance_path:requests:rate5m{job="myjob"}
     )
 
-# Aggregate up numerator and denominator, then divide to get path-level ratio.
+# 分母と分子を集約し、pathレベルの比を得るために割り算する
 - record: path:request_failures_per_requests:ratio_rate5m
   expr: |
     (
@@ -80,8 +70,8 @@ Calculating a request failure ratio and aggregating up to the job-level failure 
         sum without (instance)(instance_path:requests:rate5m{job="myjob"})
     )
 
-# No labels left from instrumentation or distinguishing instances,
-# so we use 'job' as the level.
+# メトリクス実装によって付与されたりインスタンス識別のためのラベルは残っていないので、
+# レベルとして`job`を使う
 - record: job:request_failures_per_requests:ratio_rate5m
   expr: |
     (
@@ -91,8 +81,7 @@ Calculating a request failure ratio and aggregating up to the job-level failure 
     )
 ```
 
-
-Calculating average latency over a time period from a Summary:
+ある時間間隔の平均レイテンシーをサマリーから計算する
 
 ```
 - record: instance_path:request_latency_seconds_count:rate5m
@@ -109,7 +98,7 @@ Calculating average latency over a time period from a Summary:
         instance_path:request_latency_seconds_count:rate5m{job="myjob"}
     )
 
-# Aggregate up numerator and denominator, then divide.
+# 分母と分子を集約した後、割り算する
 - record: path:request_latency_seconds:mean5m
   expr: |
     (
@@ -119,15 +108,13 @@ Calculating average latency over a time period from a Summary:
     )
 ```
 
-Calculating the average query rate across instances and paths is done using the
-`avg()` function:
+関数`avg()`を使って、instanceとpathにまたがって平均クエリーレートが計算される
 
 ```
 - record: job:request_latency_seconds_count:avg_rate5m
   expr: avg without (instance, path)(instance:request_latency_seconds_count:rate5m{job="myjob"})
 ```
 
-Notice that when aggregating that the labels in the `without` clause are removed
-from the level of the output metric name compared to the input metric names.
-When there is no aggregation, the levels always match. If this is not the case
-a mistake has likely been made in the rules.
+入力されるメトリック名と比べると、`without`で指定されたラベルが出力されるメトリック名のレベルから消えていることに注意。
+集約がない場合は、レベルが必ず同じになる。
+そうでない場合は、ルールの中に間違いがある可能性が高い。

@@ -1,21 +1,22 @@
 ---
-title: Monitoring Linux host metrics with the Node Exporter
+title: Node Exporterを用いたLinuxホストのメトリクス監視
 ---
 
-# Monitoring Linux host metrics with the Node Exporter
+# Node Exporterを用いたLinuxホストのメトリクス監視
 
-The Prometheus [**Node Exporter**](https://github.com/prometheus/node_exporter) exposes a wide variety of hardware- and kernel-related metrics.
+[**Node Exporter**](https://github.com/prometheus/node_exporter)は、ハードウェアとカーネル関係の幅広いメトリクスをexposeする。
 
-In this guide, you will:
+このガイドでは、
 
-* Start up a Node Exporter on `localhost`
-* Start up a Prometheus instance on `localhost` that's configured to scrape metrics from the running Node Exporter
+* `localhost`でNode Exporterを起動する
+* そのNode Exporterからメトリクスをscrapeするように設定したPrometheusインスタンスを`localhost`で起動する
 
-NOTE: While the Prometheus Node Exporter is for *nix systems, there is a [WMI exporter](https://github.com/martinlindhe/wmi_exporter) for Windows that serves an analogous purpose.
+NOTE: Node Exporterが*nixのためにあるのに対して、Windowsに対して[WMI exporter](https://github.com/martinlindhe/wmi_exporter)が同じような目的で使われる
 
-## Installing and running the Node Exporter
+## Node Exporterのインストールと実行
 
-The Prometheus Node Exporter is a single static binary that you can install [via tarball](#tarball-installation). Once you've downloaded it from the Prometheus [downloads page](/download#node_exporter) extract it, and run it:
+Node Exporterは、[tarballからインストール](#tarball-installation)できる単一のスタティックなバイナリである。
+Prometheusの[ダウンロードページ](/download#node_exporter)からtarballをダウンロード、展開し、実行する。
 
 ```bash
 wget https://github.com/prometheus/node_exporter/releases/download/v*/node_exporter-*.*-amd64.tar.gz
@@ -24,7 +25,7 @@ cd node_exporter-*.*-amd64
 ./node_exporter
 ```
 
-You should see output like this indicating that the Node Exporter is now running and exposing metrics on port 9100:
+以下のように、Node Exporterが動いていて9100ポートでメトリクスをexposeしていることを示す出力が見られるはずである。
 
 ```
 INFO[0000] Starting node_exporter (version=0.16.0, branch=HEAD, revision=d42bd70f4363dced6b77d8fc311ea57b63387e4f)  source="node_exporter.go:82"
@@ -35,15 +36,15 @@ INFO[0000]  - boottime                                   source="node_exporter.g
 INFO[0000] Listening on :9100                            source="node_exporter.go:111"
 ```
 
-## Node Exporter metrics
+## Node Exporterのメトリクス
 
-Once the Node Exporter is installed and running, you can verify that metrics are being exported by cURLing the `/metrics` endpoint:
+Node Exporterがインストール、実行されると、curlでエンドポイント`/metrics`にアクセスすることで、メトリクスが出力されていることを確認できる。
 
 ```bash
 curl http://localhost:9100/metrics
 ```
 
-You should see output like this:
+以下のような出力が見られるはずである。
 
 ```
 # HELP go_gc_duration_seconds A summary of the GC invocation durations.
@@ -54,15 +55,17 @@ go_gc_duration_seconds{quantile="0.5"} 5.846e-05
 # etc.
 ```
 
-Success! The Node Exporter is now exposing metrics that Prometheus can scrape, including a wide variety of system metrics further down in the output (prefixed with `node_`). To view those metrics (along with help and type information):
+成功！これでPrometheusがscrapeできるメトリクスをNode Exporterがexposeしており、出力のかなり下の方に`node_`で始まるシステムの様々なメトリクスが含まれている。
+これらのシステムメトリクスを（ヘルプおよび型情報と共に）見るためには以下のコマンドを実行する
 
 ```bash
 curl http://localhost:9100/metrics | grep "node_"
 ```
 
-## Configuring your Prometheus instances
+## Prometheusの設定
 
-Your locally running Prometheus instance needs to be properly configured in order to access Node Exporter metrics. The following [`scrape_config`](../prometheus/latest/configuration/configuration/#<scrape_config>) block (in a `prometheus.yml` configuration file) will tell the Prometheus instance to scrape from the Node Exporter via `localhost:9100`:
+Node Exporterのメトリクスにアクセスするために、ローカルで実行しているPrometheusインスタンスが適切に設定されている必要がある。
+設定ファイル`prometheus.yml`にある以下の[`scrape_config`](../prometheus/latest/configuration/configuration/#<scrape_config>)は、`localhost:9100`を通してNode Exporterからメトリクスを取得するように指定している。
 
 <a id="config"></a>
 
@@ -73,7 +76,7 @@ scrape_configs:
   - targets: ['localhost:9100']
 ```
 
-To install Prometheus, [download the latest release](/download) for your platform and untar it:
+Prometheusをインストールするには、自分のプラットフォームの[最新リリースをダウンロード](/download)し、tarを展開する。
 
 ```bash
 wget https://github.com/prometheus/prometheus/releases/download/v*/prometheus-*.*-amd64.tar.gz
@@ -81,24 +84,26 @@ tar xvf prometheus-*.*-amd64.tar.gz
 cd prometheus-*.*
 ```
 
-Once Prometheus is installed you can start it up, using the `--config.file` flag to point to the Prometheus configuration that you created [above](#config):
+インストールが終わったら、[上](#config)で作成した設定ファイルを`--config.file`フラグで指定することでPrometheusを起動することが出来る。
 
 ```bash
 ./prometheus --config.file=./prometheus.yml
 ```
 
-## Exploring Node Exporter metrics through the Prometheus expression browser
+## expressionブラウザによるNode Exporterメトリクスの調査
 
-Now that Prometheus is scraping metrics from a running Node Exporter instance, you can explore those metrics using the Prometheus UI (aka the [expression browser](/docs/visualization/expression-browser)). Navigate to `localhost:9090/graph` in your browser and use the main expression bar at the top of the page to enter expressions. The expression bar looks like this:
+これでPrometheusがNode Exporterインスタンスからメトリクスを取得しているので、PrometheusのUI（[expressionブラウザ](/docs/visualization/expression-browser)として知られる）を使ってそれらのメトリクスを調べることが出来る。
+ブラウザで`localhost:9090/graph`を開いて、ページ上部のmain expression barを使って、expressionを入力する。
+expression barは、このように見える。
 
 ![Prometheus expressions browser](/assets/prometheus-expression-bar.png)
 
-Metrics specific to the Node Exporter are prefixed with `node_` and include metrics like `node_cpu_seconds_total` and `node_exporter_build_info`.
+Node Exporter特有のメトリクスは、`node_cpu_seconds_total`や`node_exporter_build_info`のように`node_`というプリフィックスが付いている。
 
-Click on the links below to see some example metrics:
+下記のリンクをクリックすると、いくつかのメトリクスの例を見ることが出来る。
 
 Metric | Meaning
 :------|:-------
-[`rate(node_cpu_seconds_total{mode="system"}[1m])`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=rate(node_cpu_seconds_total%7Bmode%3D%22system%22%7D%5B1m%5D)&g0.tab=1) | The average amount of CPU time spent in system mode, per second, over the last minute (in seconds)
-[`node_filesystem_avail_bytes`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=node_filesystem_avail_bytes&g0.tab=1) | The filesystem space available to non-root users (in bytes)
-[`rate(node_network_receive_bytes_total[1m])`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=rate(node_network_receive_bytes_total%5B1m%5D)&g0.tab=1) | The average network traffic received, per second, over the last minute (in bytes)
+[`rate(node_cpu_seconds_total{mode="system"}[1m])`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=rate(node_cpu_seconds_total%7Bmode%3D%22system%22%7D%5B1m%5D)&g0.tab=1) | 新1分間のシステムモードの秒間CPU消費時間の平均
+[`node_filesystem_avail_bytes`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=node_filesystem_avail_bytes&g0.tab=1) | rootユーザー以外に利用可能なファイルシステムの空き
+[`rate(node_network_receive_bytes_total[1m])`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=rate(node_network_receive_bytes_total%5B1m%5D)&g0.tab=1) | 最新1分間の秒間ネットワークトラフィック平均(byte)

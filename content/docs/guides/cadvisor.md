@@ -1,17 +1,19 @@
 ---
-title: Monitoring Docker container metrics using cAdvisor
+title: cAdvisorを用いたDockerコンテナメトリクスの監視
 ---
 
-# Monitoring Docker container metrics using cAdvisor
+# cAdvisorを用いたDockerコンテナメトリクスの監視
 
-[cAdvisor](https://github.com/google/cadvisor) (short for **c**ontainer **Advisor**) analyzes and exposes resource usage and performance data from running containers. cAdvisor exposes Prometheus metrics out of the box. In this guide, we will:
+[cAdvisor](https://github.com/google/cadvisor)(**c**ontainer **Advisor**の略)は、稼働中のコンテナのリソース消費とパフォーマンスのデータを分析しexposeする。
+cAdvisorは、初期状態で、Prometheusのメトリクスを出力する。
+このガイドでは、
 
-* create a local multi-container [Docker Compose](https://docs.docker.com/compose/) installation that includes containers running Prometheus, cAdvisor, and a [Redis](https://redis.io/) server, respectively
-* examine some container metrics produced by the Redis container, collected by cAdvisor, and scraped by Prometheus
+* Prometheus、cAdvisor、[Redis](https://redis.io/)サーバーのそれぞれのコンテナを含む一つの[Docker Compose](https://docs.docker.com/compose/)の設定を作成する
+* Redisコンテナが生成、cAdvisorが収集、Prometheusがscrapeするいくつかのコンテナメトリクスを調査する
 
-## Prometheus configuration
+## Prometheusの設定
 
-First, you'll need to [configure Prometheus](/docs/prometheus/latest/configuration/configuration) to scrape metrics from cAdvisor. Create a `prometheus.yml` file and populate it with this configuration:
+まず、cAdvisorからメトリクスをscrapeするように[Prometheusを設定する](/docs/prometheus/latest/configuration/configuration)必要がある。`prometheus.yml`ファイルを作成し、この設定のようにする。
 
 ```yaml
 scrape_configs:
@@ -22,11 +24,11 @@ scrape_configs:
     - cadvisor:8080
 ```
 
-## Docker Compose configuration
+## Docker Composeの設定
 
-Now we'll need to create a Docker Compose [configuration](https://docs.docker.com/compose/compose-file/) that specifies which containers are part of our installation as well as which ports are exposed by each container, which volumes are used, and so on.
+どのポートをexposeするか、どのボリュームを使うかなどに加えて、どのコンテナがインストールの一部かを指定するDocker Compose [configuration](https://docs.docker.com/compose/compose-file/)が必要となる。
 
-In the same folder where you created the [`prometheus.yml`](#prometheus-configuration) file, create a `docker-compose.yml` file and populate it with this Docker Compose configuration:
+[`prometheus.yml`](#prometheus-configuration)を作成したのと同じフォルダで、`docker-compose.yml`を作成し、内容をこのDocker Compose の設定のようにする。
 
 ```yaml
 version: '3.2'
@@ -61,31 +63,31 @@ services:
     - 6379:6379
 ```
 
-This configuration instructs Docker Compose to run three services, each of which corresponds to a [Docker](https://docker.com) container:
+この設定は、Docker Composeに三つのサービスを実行するように指示する。それぞれの以下の[Docker](https://docker.com)コンテナに対応する。
 
-1. The `prometheus` service uses the local `prometheus.yml` configuration file (imported into the container by the `volumes` parameter).
-1. The `cadvisor` service exposes port 8080 (the default port for cAdvisor metrics) and relies on a variety of local volumes (`/`, `/var/run`, etc.).
-1. The `redis` service is a standard Redis server. cAdvisor will gather container metrics from this container automatically, i.e. without any further configuration.
+1. `prometheus`サービスは、ローカルの設定ファイル`prometheus.yml`を利用する（`volumes`パラメーターによってコンテナにインポートされる）
+2. `cadvisor`サービスは、8080ポート（cAdvisorメトリクスのデフォルトポート）をexposeし、ローカルのボリューム（`/`や`/var/run`など）に依存している
+3. `redis`サービスは、標準的なRedisサーバーで、cAdvisorがこのコンテナからコンテナのメトリクスを自動的に（つまり、追加の設定をしなくても）取得する
 
-To run the installation:
+この設定でインストールをするには下記のコマンドを実行する
 
 ```bash
 docker-compose up
 ```
 
-If Docker Compose successfully starts up all three containers, you should see output like this:
+Docker Composeが三つのコンテナ全ての軌道に成功すると、以下のように出力されるはずである。
 
 ```
 prometheus  | level=info ts=2018-07-12T22:02:40.5195272Z caller=main.go:500 msg="Server is ready to receive web requests."
 ```
 
-You can verify that all three containers are running using the [`ps`](https://docs.docker.com/compose/reference/ps/) command:
+[`ps`](https://docs.docker.com/compose/reference/ps/)コマンドを使って、三つのコンテナ全てが動いていることが確認できる。
 
 ```bash
 docker-compose ps
 ```
 
-Your output will look something like this:
+出力は、以下のようになるだろう。
 
 ```
    Name                 Command               State           Ports
@@ -95,31 +97,37 @@ prometheus   /bin/prometheus --config.f ...   Up      0.0.0.0:9090->9090/tcp
 redis        docker-entrypoint.sh redis ...   Up      0.0.0.0:6379->6379/tcp
 ```
 
-## Exploring the cAdvisor web UI
+## cAdvisorのWeb UIの調査
 
-You can access the cAdvisor [web UI](https://github.com/google/cadvisor/blob/master/docs/web.md) at `http://localhost:8080`. You can explore stats and graphs for specific Docker containers in our installation at `http://localhost:8080/docker/<container>`. Metrics for the Redis container, for example, can be accessed at `http://localhost:8080/docker/redis`, Prometheus at `http://localhost:8080/docker/prometheus`, and so on.
+cAdvisorのweb UIは、`http://localhost:8080`で見ることが出来る。特定のコンテナの統計やグラフは、`http://localhost:8080/docker/<container>`で調べることが出来る。
+例えば、Redisコンテナのメトリクスは`http://localhost:8080/docker/redis`で、Prometheusのメトリクスは`http://localhost:8080/docker/prometheus`で見ることが出来る。
 
-## Exploring metrics in the expression browser
+## expressionブラウザでのメトリクスの調査
 
-cAdvisor's web UI is a useful interface for exploring the kinds of things that cAdvisor monitors, but it doesn't provide an interface for exploring container *metrics*. For that we'll need the Prometheus [expression browser](/docs/visualization/browser), which is available at `http://localhost:9090/graph`. You can enter Prometheus expressions into the expression bar, which looks like this:
+cAdvisorのweb UIは、cAdvisorが監視しているものを調査するには便利だが、コンテナのメトリクスの調査のためのインターフェースを提供していない。
+そのためには、`http://localhost:9090/graph`で見られるPrometheusの[expressionブラウザ](/docs/visualization/browser)が必要である。
+以下のようなPrometheusのexpressionバーにexpressionを入力することが出来る。
 
 ![Prometheus expression bar](/assets/prometheus-expression-bar.png)
 
-Let's start by exploring the `container_start_time_seconds` metric, which records the start time of containers (in seconds). You can select for specific containers by name using the `name="<container_name>"` expression. The container name corresponds to the `container_name` parameter in the Docker Compose configuration. The [`container_start_time_seconds{name="redis"}`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=container_start_time_seconds%7Bname%3D%22redis%22%7D&g0.tab=1) expression, for example, shows the start time for the `redis` container.
+まず、`container_start_time_seconds`というメトリクス（コンテナの開始時間で単位は秒）から始める。
+`name="<container_name>"`というexpressionで名前を指定してコンテナを選択できる。コンテナ名は、Docker Composeの設定の`container_name`と対応している。
+したがって、例えば、[`container_start_time_seconds{name="redis"}`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=container_start_time_seconds%7Bname%3D%22redis%22%7D&g0.tab=1)というexpressionで、`redis`コンテナの開始時間を表示することが出来る。
 
-NOTE: A full listing of cAdvisor-gathered container metrics exposed to Prometheus can be found in the [cAdvisor documentation](https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md).
+NOTE: cAdvisorが収集するコンテナのメトリクスの完全な一覧は、[cAdvisorのドキュメント](https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md)で見ることが出来る。
 
-## Other expressions
+## その他のexpression
 
-The table below lists some other example expressions
+以下の表にその他のexpressionの例をいくつか示す
 
 Expression | Description | For
 :----------|:------------|:---
-[`rate(container_cpu_usage_seconds_total{name="redis"}[1m])`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=rate(container_cpu_usage_seconds_total%7Bname%3D%22redis%22%7D%5B1m%5D)&g0.tab=1) | The [cgroup](https://en.wikipedia.org/wiki/Cgroups)'s CPU usage in the last minute (split up by core) | The `redis` container
-[`container_memory_usage_bytes{name="redis"}`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=container_memory_usage_bytes%7Bname%3D%22redis%22%7D&g0.tab=1) | The cgroup's total memory usage (in bytes) | The `redis` container
-[`rate(container_network_transmit_bytes_total[1m])`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=rate(container_network_transmit_bytes_total%5B1m%5D)&g0.tab=1) | Bytes transmitted over the network by the container per second in the last minute | All containers
-[`rate(container_network_receive_bytes_total[1m])`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=rate(container_network_receive_bytes_total%5B1m%5D)&g0.tab=1) | Bytes received over the network by the container per second in the last minute | All containers
+[`rate(container_cpu_usage_seconds_total{name="redis"}[1m])`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=rate(container_cpu_usage_seconds_total%7Bname%3D%22redis%22%7D%5B1m%5D)&g0.tab=1) | [cgroup](https://en.wikipedia.org/wiki/Cgroups)の最後の1分のコア単位のCPU使用率 | `redis`コンテナ
+[`container_memory_usage_bytes{name="redis"}`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=container_memory_usage_bytes%7Bname%3D%22redis%22%7D&g0.tab=1) | cgroupの合計メモリ利用量（バイト） | `redis`コンテナ
+[`rate(container_network_transmit_bytes_total[1m])`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=rate(container_network_transmit_bytes_total%5B1m%5D)&g0.tab=1) | 最後の1分でコンテナがネットワークに送信したバイト/秒 | 全てのコンテナ
+[`rate(container_network_receive_bytes_total[1m])`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=rate(container_network_receive_bytes_total%5B1m%5D)&g0.tab=1) | 最後の1分でコンテナがネットワークから受信したバイト/秒 | 全てのコンテナ
 
-## Summary
+## まとめ
 
-In this guide, we ran three separate containers in a single installation using Docker Compose: a Prometheus container scraped metrics from a cAdvisor container which, in turns, gathered metrics produced by a Redis container. We then explored a handful of cAdvisor container metrics using the Prometheus expression browser.
+このガイドでは、Docker Composeを使って、PrometheusコンテナがcAdvisorからメトリクスをscrapeし、cAdvisorはRedisコンテナが生成したメトリクスを収集するように、一つの設定で三つの別々のコンテナを動かした。
+また、Prometheusのexpressionブラウザを使って、cAdvisorコンテナのいくつかのメトリクスを調査した。

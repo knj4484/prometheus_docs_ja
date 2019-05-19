@@ -6,71 +6,54 @@ nav_icon: sliders
 
 # Alertmanager
 
-The [Alertmanager](https://github.com/prometheus/alertmanager) handles alerts
-sent by client applications such as the Prometheus server.
-It takes care of deduplicating, grouping, and routing
-them to the correct receiver integration such as email, PagerDuty, or OpsGenie.
-It also takes care of silencing and inhibition of alerts.
+[Alertmanager](https://github.com/prometheus/alertmanager)は、Prometheusサーバーのようなクライアントアプリケーションから送信されたアラートを処理する。
+重複を排除したり、グルーピングしたり、emailやPageDuty、OpsGenieのようなレシーバー連携にアラートを送信する。
+また、アラートを一時停止したり、抑制したりする。
 
-The following describes the core concepts the Alertmanager implements. Consult
-the [configuration documentation](../configuration) to learn how to use them
-in more detail.
+以下、Alertmanagerが実装しているコアとなる概念を説明する。
+これらの詳細な使い方は、[設定ドキュメント](../configuration)を参照すること。
 
-## Grouping
+## グループ化
 
-Grouping categorizes alerts of similar nature into a single notification. This
-is especially useful during larger outages when many systems fail at once and
-hundreds to thousands of alerts may be firing simultaneously.
+グループ化は、似た性質のアラートを1つの通知に分類する。
+これは、多くのシステムが一度に失敗し、何百、何千のアラートが同時に起こる大規模障害において特に有益である。
 
-**Example:** Dozens or hundreds of instances of a service are running in your
-cluster when a network partition occurs. Half of your service instances
-can no longer reach the database.
-Alerting rules in Prometheus were configured to send an alert for each service
-instance if it cannot communicate with the database. As a result hundreds of
-alerts are sent to Alertmanager.
+**例：**ネットワークの分断が起きた時に、何十、何百のサービスのインスタンスがクラスタで稼働していたとする。
+サービスインスタンスの半分がデータベースにアクセスできない。
+Prometheusのアラートルールは、データベースに通信できない時にサービスインスタンスそれぞれに対して1つのアラートを送信するように設定されている。結果として、Alertmanagerに何百ものアラートがAlertmanagerに送信される。
 
-As a user, one only wants to get a single page while still being able to see
-exactly which service instances were affected. Thus one can configure
-Alertmanager to group alerts by their cluster and alertname so it sends a
-single compact notification.
+ユーザーとしては、どのサービスインスタンスが影響を受けたか正確に把握しつつ、1つの呼び出しを受けるだけにしたい。
+そのために、Alertmanagerがアラートをクラスタとアラート名でまとめ、1つの簡潔な通知を送信するように設定できる。
 
-Grouping of alerts, timing for the grouped notifications, and the receivers
-of those notifications are configured by a routing tree in the configuration
-file.
+アラートのグループ化、グループ化された通知のタイミング、それらの通知のレシーバーは、設定ファイルのルーティングツリーで設定される。
 
-## Inhibition
+## 抑制（inhibition）
 
-Inhibition is a concept of suppressing notifications for certain alerts if
-certain other alerts are already firing.
+抑制（inhibition）とは、他のアラートがすでに起きている場合に特定のアラートの通知を抑制する概念である。
 
-**Example:** An alert is firing that informs that an entire cluster is not
-reachable. Alertmanager can be configured to mute all other alerts concerning
-this cluster if that particular alert is firing.
-This prevents notifications for hundreds or thousands of firing alerts that
-are unrelated to the actual issue.
+**例：**クラスタ全体がアクセス不能になっていることを知らせるアラートが起きているとする。
+Alertmanagerは、そのアラートが起きている場合にこのクラスタに関する他の全てのアラートをミュートするように設定できる。
+これによって、本当の問題と無関係なアラートが何百、何千と起きたと通知するのを避けることができる。
 
-Inhibitions are configured through the Alertmanager's configuration file.
+抑制は、Alertmanagerの設定ファイルを通して設定される。
 
-## Silences
+## サイレンス
 
-Silences are a straightforward way to simply mute alerts for a given time.
-A silence is configured based on matchers, just like the routing tree. Incoming
-alerts are checked whether they match all the equality or regular expression
-matchers of an active silence.
-If they do, no notifications will be sent out for that alert.
+サイレンスは、指定された時間、単純にミュートする分かりやすい方法である。
+サイレンスは、ルーティングツリーのように、マッチャーを元に設定される。
+入ってきたアラートは、アクティブなサイレンスの全ての等値・正規表現マッチャーにマッチするか調べられる。
+マッチした場合は、そのアラートに対して通知は送られない。
 
-Silences are configured in the web interface of the Alertmanager.
+サイレンスは、AlertmanagerのWebインターフェースで設定される。
 
+## クライアントの振る舞い
 
-## Client behavior
+Alertmanagerは、クライアントの振る舞いに対して[特別な要件](../clients)を持っている。
+それらの要件に関係があるのは、アラートを送信するのにPrometheusを使わない高度なユースケースだけである。
 
-The Alertmanager has [special requirements](../clients) for behavior of its
-client. Those are only relevant for advanced use cases where Prometheus
-is not used to send alerts.
+## 高可用性
 
-## High Availability
+Alertmanagerは、高可用なクラスタを構築するための設定をサポートしている。
+これは、フラグ[--cluster-*](https://github.com/prometheus/alertmanager#high-availability)を利用して設定することができる。
 
-Alertmanager supports configuration to create a cluster for high availability.
-This can be configured using the [--cluster-*](https://github.com/prometheus/alertmanager#high-availability) flags.
-
-It's important not to load balance traffic between Prometheus and its Alertmanagers, but instead, point Prometheus to a list of all Alertmanagers.
+PrometheusとAlertmanagerの間をロードバランスせず、代わりにPrometheusを全てのAlertmanagerのリストに向けさせることが重要である。

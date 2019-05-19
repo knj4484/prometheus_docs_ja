@@ -1,99 +1,70 @@
 ---
-title: Metric types
+title: メトリクスの型
 sort_rank: 2
 ---
 
-# Metric types
+# メトリクスの型
 
-The Prometheus client libraries offer four core metric types. These are
-currently only differentiated in the client libraries (to enable APIs tailored
-to the usage of the specific types) and in the wire protocol. The Prometheus
-server does not yet make use of the type information and flattens all data into
-untyped time series. This may change in the future.
+Prometheusクライアントライブラリは、4つのメトリック型を提供している。 これらは、現在は、クライアントライブラリの中で（それらの特定の型の利用方法に応じたAPIを可能にするため）、および通信プロトコルの中でのみ区別されている。 Prometheusサーバーは、型情報をまだ利用しておらず、全てのデータを型なしの時系列データに押しつぶしている。 これは、将来的には変更されるかもしれない。
 
-## Counter
+## カウンター
 
-A _counter_ is a cumulative metric that represents a single [monotonically 
-increasing counter](https://en.wikipedia.org/wiki/Monotonic_function) whose
-value can only increase or be reset to zero on restart. For example, you can
-use a counter to represent the number of requests served, tasks completed, or
-errors.
+_カウンター_ は、累積的なメトリクスであり、単一の[単調増加するカウンター](https://en.wikipedia.org/wiki/単調写像)であり、その値は増加させるか起動時にゼロにリセットすることしかできない。 例えば、カウンターは、応答したリクエスト数、完了したタスクの数、エラーの数などに利用できる。
 
-Do not use a counter to expose a value that can decrease. For example, do not
-use a counter for the number of currently running processes; instead use a gauge.
+減少することがありうる値を出力するためにカウンターを使わないこと。 例えば、実行中のプロセス数にはカウンターを使わず、ゲージを使うこと。
 
-Client library usage documentation for counters:
+クライアントライブラリのカウンターの利用方法ドキュメントは以下の通り。
 
    * [Go](http://godoc.org/github.com/prometheus/client_golang/prometheus#Counter)
    * [Java](https://github.com/prometheus/client_java/blob/master/simpleclient/src/main/java/io/prometheus/client/Counter.java)
    * [Python](https://github.com/prometheus/client_python#counter)
    * [Ruby](https://github.com/prometheus/client_ruby#counter)
 
-## Gauge
+## ゲージ
 
-A _gauge_ is a metric that represents a single numerical value that can
-arbitrarily go up and down.
+_ゲージ_ は、自由に増加したり減少しうる単一の数値を表すメトリックである。
 
-Gauges are typically used for measured values like temperatures or current
-memory usage, but also "counts" that can go up and down, like the number of
-concurrent requests.
+_ゲージ`_ は、典型的には温度やメモリ使用量のような計測値に利用されるが、同時リクエスト数のような増えたり減ったりするカウントにも利用される。
 
-Client library usage documentation for gauges:
+クライアントライブラリのゲージの利用方法ドキュメントは以下の通り。
 
    * [Go](http://godoc.org/github.com/prometheus/client_golang/prometheus#Gauge)
    * [Java](https://github.com/prometheus/client_java/blob/master/simpleclient/src/main/java/io/prometheus/client/Gauge.java)
    * [Python](https://github.com/prometheus/client_python#gauge)
    * [Ruby](https://github.com/prometheus/client_ruby#gauge)
 
-## Histogram
+## ヒストグラム
 
-A _histogram_ samples observations (usually things like request durations or
-response sizes) and counts them in configurable buckets. It also provides a sum
-of all observed values.
+_ヒストグラム_ は、観測値（通常はリクエスト持続時間やレスポンスサイズのようなもの）のサンプリングをし、設定可能なバケット毎にカウントする。 全ての観測値の合計も提供する。
 
-A histogram with a base metric name of `<basename>` exposes multiple time series
-during a scrape:
+基本となるメトリック名が`<basename>`のヒストグラムは、以下のような複数の時系列を出力する。
 
-  * cumulative counters for the observation buckets, exposed as `<basename>_bucket{le="<upper inclusive bound>"}`
-  * the **total sum** of all observed values, exposed as `<basename>_sum`
-  * the **count** of events that have been observed, exposed as `<basename>_count` (identical to `<basename>_bucket{le="+Inf"}` above)
+  * 観測値のバケット毎の累積カウントを`<basename>_bucket{le="<upper inclusive bound>"}`として出力する
+  * 全ての観測値の合計を`<basename>_sum`として出力する
+  * 観測されたイベント数を`<basename>_count`として出力する（上記の`<basename>_bucket{le="+Inf"}`と同じ）
 
-Use the
-[`histogram_quantile()` function](/docs/prometheus/latest/querying/functions/#histogram_quantile)
-to calculate quantiles from histograms or even aggregations of histograms. A
-histogram is also suitable to calculate an
-[Apdex score](http://en.wikipedia.org/wiki/Apdex). When operating on buckets,
-remember that the histogram is
-[cumulative](https://en.wikipedia.org/wiki/Histogram#Cumulative_histogram). See
-[histograms and summaries](/docs/practices/histograms) for details of histogram
-usage and differences to [summaries](#summary).
+ヒストグラムや集約されたヒストグラムから分位数(quantile)を計算するには、[`histogram_quantile()`](/docs/prometheus/latest/querying/functions/#histogram_quantile)を利用する。 ヒストグラムは、[Apdex score](http://en.wikipedia.org/wiki/Apdex)を計算するのにも適している。 バケットを処理する際には、ヒストグラムが[累積的](https://ja.wikipedia.org/wiki/ヒストグラム#累積度数図)であることを忘れずに。 ヒストグラムの利用方法およびサマリーとの違いの詳細に関しては、ヒストグラムとサマリーを参照すること。
 
-Client library usage documentation for histograms:
+クライアントライブラリのヒストグラムの利用方法ドキュメントは以下の通り。
 
    * [Go](http://godoc.org/github.com/prometheus/client_golang/prometheus#Histogram)
    * [Java](https://github.com/prometheus/client_java/blob/master/simpleclient/src/main/java/io/prometheus/client/Histogram.java)
    * [Python](https://github.com/prometheus/client_python#histogram)
    * [Ruby](https://github.com/prometheus/client_ruby#histogram)
 
-## Summary
+## サマリー
 
-Similar to a _histogram_, a _summary_ samples observations (usually things like
-request durations and response sizes). While it also provides a total count of
-observations and a sum of all observed values, it calculates configurable
-quantiles over a sliding time window.
+_サマリー_ は、_ヒストグラム_ と同様に、観測値（通常はリクエスト持続時間やレスポンスサイズのようなもの）のサンプリングをする。観測の全カウントおよび観測値の合計を提供すると同時に、設定可能な分位数を計算する。
 
-A summary with a base metric name of `<basename>` exposes multiple time series
-during a scrape:
+基本となるメトリック名が`<basename>`のサマリーは、以下のような複数の時系列を出力する。
 
-  * streaming **φ-quantiles** (0 ≤ φ ≤ 1) of observed events, exposed as `<basename>{quantile="<φ>"}`
-  * the **total sum** of all observed values, exposed as `<basename>_sum`
-  * the **count** of events that have been observed, exposed as `<basename>_count`
+  * 観測されたイベントの **φ分位数** (0 ≤ φ ≤ 1)を`<basename>{quantile="<φ>"}`として出力する
+  * 全ての観測値の **合計** を`<basename>_sum`として出力する
+  * 観測されたイベントの **数** を`<basename>_count`として出力する
 
-See [histograms and summaries](/docs/practices/histograms) for
-detailed explanations of φ-quantiles, summary usage, and differences
-to [histograms](#histogram).
+φ分位数やサマリーの利用方法、[ヒストグラム](#histogram)との違いの詳細な説明については、[ヒストグラムとサマリー](/docs/practices/histograms)を参照すること。
 
-Client library usage documentation for summaries:
+クライアントライブラリのサマリーの利用方法ドキュメントは以下の通り。
 
    * [Go](http://godoc.org/github.com/prometheus/client_golang/prometheus#Summary)
    * [Java](https://github.com/prometheus/client_java/blob/master/simpleclient/src/main/java/io/prometheus/client/Summary.java)

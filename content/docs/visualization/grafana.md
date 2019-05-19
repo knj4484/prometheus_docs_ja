@@ -3,21 +3,20 @@ title: Grafana
 sort_rank: 2
 ---
 
-# Grafana support for Prometheus
+# GrafanaのPrometheusサポート
 
-[Grafana](http://grafana.org/) supports querying Prometheus.
-The Grafana data source for Prometheus is included since Grafana 2.5.0 (2015-10-28).
+[Grafana](http://grafana.org/)はPrometheusのクエリをサポートしている。
+Prometheus用のGrafanaデータソースは、Grafana 2.5.0 (2015-10-28)から含まれている。
 
-The following shows an example Grafana dashboard which queries Prometheus for data:
+以下にPrometheusからデータを取得するGrafanaのダッシュボードの例を示す。
 
 [![Grafana screenshot](/assets/grafana_prometheus.png)](/assets/grafana_prometheus.png)
 
-## Installing
+## インストール
 
-For the full Grafana installation instructions, see the [official Grafana
-documentation](http://docs.grafana.org/installation/).
+完全なGrafanaのインストール手順は、[Grafana公式ドキュメント](http://docs.grafana.org/installation/)を参照すること。
 
-As an example, on Linux, installing Grafana could look like this:
+例えば、Linuxでは、Grafanaのインストールは以下のようになる
 
 ```bash-lang
 # Download and unpack Grafana from binary tar (adjust version as appropriate).
@@ -29,53 +28,45 @@ cd grafana-2.5.0/
 ./bin/grafana-server web
 ```
 
-## Using
+## 利用方法
 
-By default, Grafana will be listening on
-[http://localhost:3000](http://localhost:3000). The default login is "admin" /
-"admin".
+デフォルトでは、Grafanaは[http://localhost:3000](http://localhost:3000)をリッスンしている。デフォルトのログインは、"admin" / "admin"である。
 
 ### Creating a Prometheus data source
 
-To create a Prometheus data source:
+Prometheusデータソースを作成するには
 
-1. Click on the Grafana logo to open the sidebar menu.
-2. Click on "Data Sources" in the sidebar.
-3. Click on "Add New".
-4. Select "Prometheus" as the type.
-5. Set the appropriate Prometheus server URL (for example, `http://localhost:9090/`)
-6. Adjust other data source settings as desired (for example, turning the proxy access off).
-7. Click "Add" to save the new data source.
+1. Grafanaのロゴをクリックしてサイドバーメニューを開く
+2. サイドバーの「Data Sources」をクリックする
+3. 「Add New」をクリックする
+4. TypeでPrometheusを選択する
+5. 適切なPrometheusサーバーのURL（例えば`http://localhost:9090/`）を入力する
+6. 必要に応じて他のデータソースの設定を調整する（例えばプロキシアクセスをoffにする）
+7. 「Add」をクリックして保存する
 
-The following shows an example data source configuration:
+以下にデータソースの設定例を示す。
 
 [![Data source configuration](/assets/grafana_configuring_datasource.png)](/assets/grafana_configuring_datasource.png)
 
-### Creating a Prometheus graph
+### Prometheusのグラフの作成
 
 Follow the standard way of adding a new Grafana graph. Then:
+Grafanaの標準的なグラフ追加の手順に従うこと。そして
 
-1. Click the graph title, then click "Edit".
-2. Under the "Metrics" tab, select your Prometheus data source (bottom right).
-3. Enter any Prometheus expression into the "Query" field, while using the
-   "Metric" field to lookup metrics via autocompletion.
-4. To format the legend names of time series, use the "Legend format" input. For
-   example, to show only the `method` and `status` labels of a returned query
-   result, separated by a dash, you could use the legend format string
-   `{{method}} - {{status}}`.
-5. Tune other graph settings until you have a working graph.
+1. グラフタイトルをクリックし、「Edit」をクリックする
+2. 「Metrics」タブで、Prometheusデータソース（右下）を選択する
+3. 「Metric」欄で自動補完を通してメトリックを調べながら「Query」欄にPrometheusの式を入力する。
+4- 時系列の凡例をフォーマットするために、「Legend format」を利用する。例えば、メソッドとクエリの結果のステータスだけダッシュで区.って表示したい場合は、「Legend format」に文字列`{{method}} - {{status}}`を使う
+5. グラフ化がうまく行くまで他のグラフ設定を調整する
 
-The following shows an example Prometheus graph configuration:
+以下にPrometheusグラフの設定例を示す。
 [![Prometheus graph creation](/assets/grafana_qps_graph.png)](/assets/grafana_qps_graph.png)
 
-### Importing pre-built dashboards from Grafana.com
+### Grafana.comからダッシュボードをインポートする
 
-Grafana.com maintains [a collection of shared dashboards](https://grafana.com/dashboards)
-which can be downloaded and used with standalone instances of Grafana.  Use
-the Grafana.com "Filter" option to browse dashboards for the "Prometheus"
-data source only.
+Grafana.comは、[共有されたダッシュボードの収集](https://grafana.com/dashboards)し、保守している。
+それらは、ダウンロードし、Grafanaのスタンドアローンのインスタンスで利用できる。
+Grafana.comの「Filter」機能を使って、「Prometheus」がデータソースのもののみを表示する。
 
-You must currently manually edit the downloaded JSON files and correct the
-`datasource:` entries to reflect the Grafana data source name which you
-chose for your Prometheus server.  Use the "Dashboards" → "Home" → "Import"
-option to import the edited dashboard file into your Grafana install.
+現在、ダウンロードしたJSONファイルを手動で編集して、Prometheusサーバーに付けたGrafanaデーターソース名を反映するように`datasource:`の項目を修正しなければならない。
+"Dashboards" → "Home" → "Import"を使って、編集したそのダッシュボードファイルをインポートする。

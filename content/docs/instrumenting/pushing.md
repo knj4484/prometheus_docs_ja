@@ -1,26 +1,20 @@
 ---
-title: Pushing metrics
+title: メトリクスのプッシュ
 sort_rank: 3
 ---
 
-# Pushing metrics
+# メトリクスのプッシュ
 
-Occasionally you will need to monitor components which cannot be scraped. The
-[Prometheus Pushgateway](https://github.com/prometheus/pushgateway) allows you
-to push time series from [short-lived service-level batch
-jobs](/docs/practices/pushing/) to an intermediary job which Prometheus can
-scrape. Combined with Prometheus's simple text-based exposition format, this
-makes it easy to instrument even shell scripts without a client library.
+スクレイプできないコンポーネントを監視しなければならないことがある。
+Prometheusでは、[Pushgateway](https://github.com/prometheus/pushgateway)によって、[短命のサービスレベルのバッチジョブ](/docs/practices/pushing/)からPrometheusがスクレイプ可能な中間的なジョブへと時系列をプッシュ出来るようになる。
+これとPrometheusの単純なテキストベースのフォーマットとの組み合わせによって、クライアントライブラリなしでシェルスクリプトにメトリクスを組み込むことでさえ簡単になっている。
 
- * For more information on using the Pushgateway and use from a Unix shell, see the project's
-[README.md](https://github.com/prometheus/pushgateway/blob/master/README.md).
+* Pushgatewayの使い方とUnixシェルからの使い方に関するさらなる情報は、プロジェクトの[README.md](https://github.com/prometheus/pushgateway/blob/master/README.md)を参照
 
- * For use from Java see the
-[PushGateway](https://prometheus.github.io/client_java/io/prometheus/client/exporter/PushGateway.html)
-class.
+* Javaからの利用に関しては、[PushGateway](https://prometheus.github.io/client_java/io/prometheus/client/exporter/PushGateway.html)クラスを参照
 
- * For use from Go see the [Push](https://godoc.org/github.com/prometheus/client_golang/prometheus/push#Pusher.Push) and [Add](https://godoc.org/github.com/prometheus/client_golang/prometheus/push#Pusher.Add) methods.
+* Goからの利用に関しては、[Push](http://godoc.org/github.com/prometheus/client_golang/prometheus#Push)と[PushAdd](http://godoc.org/github.com/prometheus/client_golang/prometheus#PushAdd)を参照
 
- * For use from Python see [Exporting to a Pushgateway](https://github.com/prometheus/client_python#exporting-to-a-pushgateway).
+* Pythonからの利用は、[Exporting to a Pushgateway](https://github.com/prometheus/client_python#exporting-to-a-pushgateway)
 
- * For use from Ruby see the [Pushgateway documentation](https://github.com/prometheus/client_ruby#pushgateway).
+* Rubyからの利用に関しては、[Pushgateway documentation](https://github.com/prometheus/client_ruby#pushgateway)を参照

@@ -1,26 +1,28 @@
 ---
-title: Use file-based service discovery to discover scrape targets
+title: 監視対象検出のためのファイルベースサービスディスカバリーの利用
 ---
 
-# Use file-based service discovery to discover scrape targets
+# 監視対象検出のためのファイルベースサービスディスカバリーの利用
 
-Prometheus offers a variety of [service discovery options](https://github.com/prometheus/prometheus/tree/master/discovery) for discovering scrape targets, including [Kubernetes](/docs/prometheus/latest/configuration/configuration/#<kubernetes_sd_config>), [Consul](/docs/prometheus/latest/configuration/configuration/#<consul_sd_config>), and many others. If you need to use a service discovery system that is not currently supported, your use case may be best served by Prometheus' [file-based service discovery](/docs/prometheus/latest/configuration/configuration/#<file_sd_config>) mechanism, which enables you to list scrape targets in a JSON file (along with metadata about those targets).
+Prometheusは、監視対象を検出するための[様々なサービスディスカバリーの選択肢](https://github.com/prometheus/prometheus/tree/master/discovery)（[Kubernetes](/docs/prometheus/latest/configuration/configuration/#<kubernetes_sd_config>)や[Consul](/docs/prometheus/latest/configuration/configuration/#<consul_sd_config>)、その他）を提供している。
+現在サポートされていないサービスディスカバリーを利用する必要がある場合には、Prometheusの[ファイルベースのサービスディスカバリー](/docs/prometheus/latest/configuration/configuration/#<file_sd_config>)が最も役立つであろう。
+ファイルベースのサービスディスカバリーによって、JSONファイルで監視対象をメタデータと共にリストすることが可能になる。
 
-In this guide, we will:
+このガイドでは、
 
-* Install and run a Prometheus [Node Exporter](../node-exporter) locally
-* Create a `targets.json` file specifying the host and port information for the Node Exporter
-* Install and run a Prometheus instance that is configured to discover the Node Exporter using the `targets.json` file
+* ローカルでPrometheus Node Exporterをインストール、実行する
+* そのNode Exporterのホストとポートを指定する`targets.json`を作成する
+* その`targets.json`を使ってNode Exporterを検出するように設定されたPrometheusインスタンスをインストール、実行する
 
-## Installing and running the Node Exporter
+## Node Exporterのインストールと実行
 
-See [this section](../node-exporter#installing-and-running-the-node-exporter) of the [Monitoring Linux host metrics with the Node Exporter](../node-exporter) guide. The Node Exporter runs on port 9100. To ensure that the Node Exporter is exposing metrics:
+[Node Exporterを用いたLinuxホストのメトリクス監視](../node-exporter)の[Node Exporterのインストールと実行](../node-exporter#installing-and-running-the-node-exporter)の部分を参照して行う。
 
 ```bash
 curl http://localhost:9100/metrics
 ```
 
-The metrics output should look something like this:
+出力されるメトリクスは、このようになるはずである。
 
 ```
 # HELP go_gc_duration_seconds A summary of the GC invocation durations.
@@ -31,9 +33,10 @@ go_gc_duration_seconds{quantile="0.5"} 0
 ...
 ```
 
-## Installing, configuring, and running Prometheus
+## Prometheusのインストールと設定、実行
 
-Like the Node Exporter, Prometheus is a single static binary that you can install via tarball. [Download the latest release](/download#prometheus) for your platform and untar it:
+Node Exporterと同じように、Prometheusは一つの静的なバイナリで、tarballからインストールできる。
+プラットフォームに合った[最新リリースをダウンロード](/download#prometheus)し、展開する。
 
 ```bash
 wget https://github.com/prometheus/prometheus/releases/download/v*/prometheus-*.*-amd64.tar.gz
@@ -41,7 +44,7 @@ tar xvf prometheus-*.*-amd64.tar.gz
 cd prometheus-*.*
 ```
 
-The untarred directory contains a `prometheus.yml` configuration file. Replace the current contents of that file with this:
+展開したディレクトリには設定ファイル`prometheus.yml`がある。そのファイルを以下の内容に置き換える。
 
 ```yaml
 scrape_configs:
@@ -51,9 +54,9 @@ scrape_configs:
     - 'targets.json'
 ```
 
-This configuration specifies that there is a job called `node` (for the Node Exporter) that retrieves host and port information for Node Exporter instances from a `targets.json` file.
+この設定は、`node`という名前（Node Exporterのため）のジョブがあり、そのジョブが、`targets.json`というファイルからNode Exporterインスタンスのホストとポートの情報を取得するように指定している。
 
-Now create that `targets.json` file and add this content to it:
+`targets.json`というファイルを作成し、以下の内容を追加する。
 
 ```json
 [
@@ -68,35 +71,38 @@ Now create that `targets.json` file and add this content to it:
 ]
 ```
 
-NOTE: In this guide we'll work with JSON service discovery configurations manually for the sake of brevity. In general, however, we recommend that you use some kind of JSON-generating process or tool instead.
+NOTE: このガイドでは、簡潔にするために、サービスディスカバリーの設定のJSONを手動で編集しているが、JSONを生成するプロセスやツールを代わりに使うことを推奨する。
 
-This configuration specifies that there is a `node` job with one target: `localhost:9100`.
+この設定は、一つの対象`localhost:9100`を持つ`node`というジョブを指定している。
 
-Now you can start up Prometheus:
+これで、Prometheusを起動することができる。
 
 ```bash
 ./prometheus
 ```
 
-If Prometheus has started up successfully, you should see a line like this in the logs:
+Prometheusがうまく起動したら、ログに下記のような行が見られるはずである。
 
 ```
 level=info ts=2018-08-13T20:39:24.905651509Z caller=main.go:500 msg="Server is ready to receive web requests."
 ```
 
-## Exploring the discovered services' metrics
+## 検出されたサービスのメトリクス調査
 
-With Prometheus up and running, you can explore metrics exposed by the `node` service using the Prometheus [expression browser](/docs/visualization/browser). If you explore the [`up{job="node"}`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=up%7Bjob%3D%22node%22%7D&g0.tab=1) metric, for example, you can see that the Node Exporter is being appropriately discovered.
+稼働中のPrometheusによって、`node`サービスで出力されたメトリクスを[expressionブラウザ](/docs/visualization/browser)を使って調査することが出来る。
+例えば、[`up{job="node"}`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=up%7Bjob%3D%22node%22%7D&g0.tab=1)というメトリックを調査すると、Node Exporterが適切に検出されていることが分かる。
 
-## Changing the targets list dynamically
+## 監視対象リストの動的な変更
 
-When using Prometheus' file-based service discovery mechanism, the Prometheus instance will listen for changes to the file and automatically update the scrape target list, without requiring an instance restart. To demonstrate this, start up a second Node Exporter instance on port 9200. First navigate to the directory containing the Node Exporter binary and run this command in a new terminal window:
+Prometheusのファイルベースのサービスディスカバリーを利用しているときには、Prometheusはファイルの変更をリッスンしており、再起動を必要とすることなく、監視対象リストを自動的に更新する。
+この説明のために、二つ目のNode Exporterを9200ポートで起動する。
+まず、Node Exporterのバイナリがあるディレクトリに移動し、このコマンドを新しいターミナルで実行する。
 
 ```bash
 ./node_exporter --web.listen-address=":9200"
 ```
 
-Now modify the config in `targets.json` by adding an entry for the new Node Exporter:
+以下のように新しいNode Exporterのエントリを追加することで`targets.json`の設定を変更する。
 
 ```json
 [
@@ -119,8 +125,9 @@ Now modify the config in `targets.json` by adding an entry for the new Node Expo
 ]
 ```
 
-When you save the changes, Prometheus will automatically be notified of the new list of targets. The [`up{job="node"}`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=up%7Bjob%3D%22node%22%7D&g0.tab=1) metric should display two instances with `instance` labels `localhost:9100` and `localhost:9200`.
+変更を保存することで、自動的にPrometheusに新しい監視対象リストが知らされる。
+メトリック[`up{job="node"}`](http://localhost:9090/graph?g0.range_input=1h&g0.expr=up%7Bjob%3D%22node%22%7D&g0.tab=1)は、ラベル`instance`が`localhost:9100`と`localhost:9200`の二つのインスタンスを表示するはずである。
 
-## Summary
+## まとめ
 
-In this guide, you installed and ran a Prometheus Node Exporter and configured Prometheus to discover and scrape metrics from the Node Exporter using file-based service discovery.
+このガイドでは、Node Exporterをインストール、実行し、ファイルベースのサービスディスカバリーでそのNode Exporterを検出しメトリクスを取得するように、Prometheusを設定した。

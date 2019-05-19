@@ -1,118 +1,91 @@
 ---
-title: Writing client libraries
+title: クライアントライブラリの書き方
 sort_rank: 2
 ---
 
-# Writing client libraries
+# クライアントライブラリの書き方
 
-This document covers what functionality and API Prometheus client libraries
-should offer, with the aim of consistency across libraries, making the easy use
-cases easy and avoiding offering functionality that may lead users down the
-wrong path.
+このドキュメントは、簡単なユースケースは簡単にし、ユーザーを間違った方向へ導いてしまう機能を回避できるようなライブラリ間の一貫性を目的として、Prometheusクライアントライブラリがどのような機能とAPIを提供すべきかについて説明する。
 
-There are [10 languages already supported](/docs/instrumenting/clientlibs) at
-the time of writing, so we’ve gotten a good sense by now of how to write a
-client. These guidelines aim to help authors of new client libraries produce
-good libraries.
+これを書いている時点で、[10言語](/docs/instrumenting/clientlibs)でサポートされており、クライアントをどう書くかについてよく分かっている。
+このガイドラインは、新しいクライアントライブラリの作者が良いライブラリを開発する助けになることを目的としている。
 
-## Conventions
+## 慣例
 
-MUST/MUST NOT/SHOULD/SHOULD NOT/MAY have the meanings given in
-[https://www.ietf.org/rfc/rfc2119.txt](https://www.ietf.org/rfc/rfc2119.txt)
+「しなければならない（ MUST ）」、 「してはならない（ MUST NOT ）」、 「する必要がある（ SHOULD ）」、「しないほうがよい（ SHOULD NOT ）」、「してもよい（ MAY ）」は、[https://www.ietf.org/rfc/rfc2119.txt](https://www.ietf.org/rfc/rfc2119.txt)（[日本語訳](https://www.ipa.go.jp/security/rfc/RFC2119JA.html)）で定められた意味を持つ。
 
-In addition ENCOURAGED means that a feature is desirable for a library to have,
-but it’s okay if it’s not present. In other words, a nice to have.
+さらに、「するのが望ましい（ENCOURAGED）」は、ライブラリがある機能を持っているのが望ましいがなくてもよいという意味である。
+言い換えると、あると良い機能である。
 
-Things to keep in mind:
+心に留めておくべきことは以下の通り。
 
-* Take advantage of each language’s features.
+* それぞれの言語の機能を活かすこと
+* よくあるユースケースは簡単である必要がある
+* 何かを正しくするやり方が一番簡単なやり方である必要がある
+* より複雑なユースケースが可能である必要がある
 
-* The common use cases should be easy.
+よくあるユースケースを順に示す。
 
-* The correct way to do something should be the easy way.
+* ライブラリ/アプリケーション中に大量に散らばったラベルのないカウンター
+* サマリー/ヒストグラムでの関数/ブロックのコードの時間計測
+* ものごとの現在の状態（およびその限度）を追跡するするためのゲージ
+* バッチジョブの監視
 
-* More complex use cases should be possible.
+## 全体の構造
 
-The common use cases are (in order):
+クライアントは、内部的にはコールバックベースで書かれていなければならない（MUST）。
+クライアントは、一般的にここで述べられている構造に従っている必要がある（ SHOULD ）。
 
-* Counters without labels spread liberally around libraries/applications.
+鍵となるクラスはCollectorである。
+このクラスは、0個以上のメトリクスとその値を返す（典型的にはcollectという）メソッドを持っている。
+Collectorは、CollectorRegistryに登録される。
+データは、CollectorRegistryをクラス/メソッド/関数bridgeに渡すことで出力される。
+bridgeは、Prometheusがサポートしているフォーマットでメトリクスを返す。
+CollectorRegistryは、スクレイプされるたびに、各Collectorのcollectメソッドをコールバックしなければならない。
 
-* Timing functions/blocks of code in Summaries/Histograms.
+ほとんどのユーザーが利用するインターフェースは、Counter、Gauge、Summary、HistogramのCollectorである。
+これらは1つのメトリックを表し、ユーザーが自分のコードにメトリクスを組み込むユースケースの大部分を含んでいるはずである。
 
-* Gauges to track current states of things (and their limits).
+他の監視システムからのプロキシのような、より高度なユースケースでは、独自Collectorを書くことが要求される。
+ユーザーが1つのメトリクス組み込みの仕組みを考えるだけで済むように、CollectorRegistryから別の監視システムが理解できるフォーマットのデータを生成するbridgeを書きたい人もいるだろう。
 
-* Monitoring of batch jobs.
+CollectorRegistryは、関数`register()`/`unregister()`を提供する必要があり（SHOULD）、Collectorは、複数のCollectorRegistryに登録されてもよくなっている必要がある（SHOULD）。
 
-## Overall structure
+クライアントライブラリは、スレッドセーフでなければならない（MUST）。
 
-Clients MUST be written to be callback based internally. Clients SHOULD
-generally follow the structure described here.
+Cのように、オブジェクト指向でない言語では、現実的な範囲でこの構成になるよう心がけるべきである。
 
-The key class is the Collector. This has a method (typically called ‘collect’)
-that returns zero or more metrics and their samples. Collectors get registered
-with a CollectorRegistry. Data is exposed by passing a CollectorRegistry to a
-class/method/function "bridge", which returns the metrics in a format
-Prometheus supports. Every time the CollectorRegistry is scraped it must
-callback to each of the Collectors’ collect method.
+### 命名
 
-The interface most users interact with are the Counter, Gauge, Summary, and
-Histogram Collectors. These represent a single metric, and should cover the
-vast majority of use cases where a user is instrumenting their own code.
+クライアントライブラリは、取り組んでいる言語の命名規約を鑑みつつ、このドキュメントに書かれている関数/メソッド/クラス/名に従う必要がある（SHOULD）。
+例えば、Pythonでは`set_to_current_time()`が酔いが、Goでは`SetToCurrentTime()`の方がよく、Javaでは`setToCurrentTime()`が慣例である。
+関数のオーバーロードが許されないなどの技術的な理由で名前が異なる場合は、ドキュメントやヘルプ文字列で、ユーザーに他の名前も示す必要がある（SHOULD）。
 
-More advanced uses cases (such as proxying from another
-monitoring/instrumentation system) require writing a custom Collector. Someone
-may also want to write a "bridge" that takes a CollectorRegistry and produces
-data in a format a different monitoring/instrumentation system understands,
-allowing users to only have to think about one instrumentation system.
+ライブラリは、ここであげるものと同じまたは類似の名前で別の意味を持つ関数/メソッド/クラスを提供してはならない（MUST NOT）。
 
-CollectorRegistry SHOULD offer `register()`/`unregister()` functions, and a
-Collector SHOULD be allowed to be registered to multiple CollectorRegistrys.
+## メトリクス
 
-Client libraries MUST be thread safe.
+カウンター、ゲージ、サマリー、ヒストグラムの[メトリック型](/docs/concepts/metric_types/)が、ユーザーが使う主要なインターフェースである。
 
-For non-OO languages such as C, client libraries should follow the spirit of
-this structure as much as is practical.
+カウンターとゲージは、クライアントライブラリに含まれていなければならない（MUST）。
+少なくともサマリーかヒストグラムのどちらかが提供されていなければならない（MUST）。
 
-### Naming
+これらは、主に、ファイルスコープの静的な変数、つまりそれらが利用されるファイルと同じファイルで定義されるグローバル変数のはずである。
+クライアントライブラリは、これをできるようにする必要がある（SHOULD）。
+よくあるユースケ〜スは、あるオブジェクトの1つのインスタンスのコンテキストにあるコード断片ではなく、いろいろなところにあるコード断片にメトリクスを実装することである。
+ユーザーがメトリクスを辿って自分のコードをくまなく調べる必要があってはいけない。
+クライアントライブラリがユーザーのためにそれをするべきである。
+そうでなければ、それを容易にするためのライブラリのラッパーをユーザーが書くことになるだろうが、それはうまくいくことは稀である。
 
-Client libraries SHOULD follow function/method/class names mentioned in this
-document, keeping in mind the naming conventions of the language they’re
-working in. For example, `set_to_current_time()` is good for a method name
-Python, but `SetToCurrentTime()` is better in Go and `setToCurrentTime()` is
-the convention in Java. Where names differ for technical reasons (e.g. not
-allowing function overloading), documentation/help strings SHOULD point users
-towards the other names.
+デフォルトのCollectorRegistryがなければならない（MUST）。
+標準のメトリックは、デフォルトで、ユーザーに必要な特別な作業なしに、暗黙的にそのCollectorRegistryに登録しなければならない（MUST）。
+メトリクスがデフォルトのCollectorRegistryに登録されないようにする方法がなければならない（MUST）。
+独自のcollectorもこれに従う必要がある（SHOULD）。
 
-Libraries MUST NOT offer functions/methods/classes with the same or similar
-names to ones given here, but with different semantics.
+メトリクスを作成する詳細な方法は言語によって異なるはずである。
+例えば、いくつかの言語（例えばJavaやGo）ではビルダーが最善の方法である一方で、他の言語（例えばPython）では関数の引数が、1回の呼び出しで同じことをできるだけの十分な表現力がある。
 
-## Metrics
-
-The Counter, Gauge, Summary and Histogram [metric
-types](/docs/concepts/metric_types/) are the primary interface by users.
-
-Counter and Gauge MUST be part of the client library. At least one of Summary
-and Histogram MUST be offered.
-
-These should be primarily used as file-static variables, that is, global
-variables defined in the same file as the code they’re instrumenting. The
-client library SHOULD enable this. The common use case is instrumenting a piece
-of code overall, not a piece of code in the context of one instance of an
-object. Users shouldn’t have to worry about plumbing their metrics throughout
-their code, the client library should do that for them (and if it doesn’t,
-users will write a wrapper around the library to make it "easier" - which
-rarely tends to go well).
-
-There MUST be a default CollectorRegistry, the standard metrics MUST by default
-implicitly register into it with no special work required by the user. There
-MUST be a way to have metrics not register to the default CollectorRegistry,
-for use in batch jobs and unittests. Custom collectors SHOULD also follow this.
-
-Exactly how the metrics should be created varies by language. For some (Java,
-Go) a builder approach is best, whereas for others (Python) function arguments
-are rich enough to do it in one call.
-
-For example in the Java Simpleclient we have:
+例えば、Java Simpleclientでは以下のようになる。
 
 ```java
 class YourClass {
@@ -122,284 +95,237 @@ class YourClass {
 }
 ```
 
-This will register requests with the default CollectorRegistry. By calling
-`build()` rather than `register()` the metric won’t be registered (handy for
-unittests), you can also pass in a CollectorRegistry to `register()` (handy for
-batch jobs).
+これはリクエストをデフォルトのCollectorRegistryに登録する。
+`register()`ではなく`build()`を呼び出したことで、このメトリックは登録されるない（単体テストに便利である）。
+`register()`にCollectorRegistryを渡すこともできる（バッチジョブに便利である）。
 
-### Counter
+### カウンター
 
-[Counter](/docs/concepts/metric_types/#counter) is a monotonically increasing
-counter. It MUST NOT allow the value to decrease, however it MAY be reset to 0
-(such as by server restart).
+[カウンター](/docs/concepts/metric_types/#counter)は、単調増加するカウンターである。
+カウンターは、値を減少させてはならない（MUST NOT）が、サーバーの再起動などで、0にリセットしてもよい（MAY）。
 
-A counter MUST have the following methods:
+カウンターは以下のメソッドを持たなければならない（MUST）。
 
-* `inc()`: Increment the counter by 1
-* `inc(double v)`: Increment the counter by the given amount. MUST check that v >= 0.
+* `inc()`: 1でカウンターをインクリメントする
+* `inc(double v)`: 与えられた量でカウンターをインクリメントする。v >= 0であることをチェックしなければならない（MUST）。
 
-A counter is ENCOURAGED to have:
+カウンターは以下の機能を持つのが望ましい（ENCOURAGED）。
 
-A way to count exceptions throw/raised in a given piece of code, and optionally
-only certain types of exceptions. This is count_exceptions in Python.
+あるコード断片での例外のthrow/raisedを数える方法と、オプションで特定の例外の型にだけそうする方法。
+これはPythonでは、count_exceptionsである。
 
-Counters MUST start at 0.
+カウンターは0で始まらなければならない（MUST)。
 
-### Gauge
+### ゲージ
 
-[Gauge](/docs/concepts/metric_types/#gauge) represents a value that can go up
-and down.
+[ゲージ](/docs/concepts/metric_types/#gauge)は、増加/減少する値を表す。
 
-A gauge MUST have the following methods:
+ゲージは以下のメソッドを持たなければならない（MUST）。
 
-* `inc()`: Increment the gauge by 1
-* `inc(double v)`: Increment the gauge by the given amount
-* `dec()`: Decrement the gauge by 1
-* `dec(double v)`: Decrement the gauge by the given amount
-* `set(double v)`: Set the gauge to the given value
+* `inc()`: ゲージを1でインクリメントする
+* `inc(double v)`: 与えられた量でゲージをインクリメントする
+* `dec()`: ゲージを1でデクリメントする
+* `dec(double v)`: 与えられた量でゲージをデクリメントする
+* `set(double v)`: ゲージを与えられた値にセットする
 
-Gauges MUST start at 0, you MAY offer a way for a given gauge to start at a
-different number.
+ゲージは0で始まらなければならない（MUST)。
+ゲージが別の数で始まる方法を提供してもよい（MAY）。
 
-A gauge SHOULD have the following methods:
+ゲージは以下のメソッドを持つ必要がある（SHOULD）。
 
-* `set_to_current_time()`: Set the gauge to the current unixtime in seconds.
+* `set_to_current_time()`: ゲージを現在のUNIX時間（秒）にセットする
 
-A gauge is ENCOURAGED to have:
+ゲージは以下の機能を持つのが望ましい（ENCOURAGED）。
 
-A way to track in-progress requests in some piece of code/function. This is
-`track_inprogress` in Python.
+コード/関数の断片で進行中のリクエストを追跡する方法。
+これはPythonでは、`track_inprogress`である。
 
-A way to time a piece of code and set the gauge to its duration in seconds.
-This is useful for batch jobs. This is startTimer/setDuration in Java and the
-`time()` decorator/context manager in Python. This SHOULD match the pattern in
-Summary/Histogram (though `set()` rather than `observe()`).
+コード断片の時間を計り、ゲージをその時間（秒）にセットする。
+これはバッチジョブに便利である。
+これはJavaでは、startTimer/setDurationであり、Pythonでは、`time()` decorator/context managerである。
+これは、サマリー/ヒストグラムのパターンに合わせる（ただし`observe()`の代わりに`set()`とする）必要がある（SHOULD）。
 
-### Summary
+### サマリー
 
-A [summary](/docs/concepts/metric_types/#summary) samples observations (usually
-things like request durations) over sliding windows of time and provides
-instantaneous insight into their distributions, frequencies, and sums.
+[サマリー](/docs/concepts/metric_types/#summary)は、時間のスライディングウインドウに渡る（普通はリクエスト時間のような）観測値を採取し、ある特定の瞬間のその分布、頻度、合計に関する情報を提供する。
 
-A summary MUST NOT allow the user to set "quantile" as a label name, as this is
-used internally to designate summary quantiles. A summary is ENCOURAGED to
-offer quantiles as exports, though these can’t be aggregated and tend to be
-slow. A summary MUST allow not having quantiles, as just `_count`/`_sum` is
-quite useful and this MUST be the default.
+サマリーは、内部的にサマリーの分位数に割り当てられるので、"quantile"をユーザーにラベル名としてセットさせてはならない（MUST NOT）。
+サマリーは、（集約ができず、遅いが）分位数を出力するのが望ましい（ENCOURAGED）。
+サマリーは、`_count`/`_sum`だけで十分便利なので、分位数を持たなくてもよいようにしなければならない（MUST）。
+また、これがデフォルトでなければならない（MUST）。
 
-A summary MUST have the following methods:
+サマリーは以下のメソッドを持たなければならない（MUST）。
 
-* `observe(double v)`: Observe the given amount
+* `observe(double v)`: 与えられた量を観測する
 
-A summary SHOULD have the following methods:
+サマリーは以下のメソッドを持つ必要がある（SHOULD）。
 
-Some way to time code for users in seconds. In Python this is the `time()`
-decorator/context manager. In Java this is startTimer/observeDuration. Units
-other than seconds MUST NOT be offered (if a user wants something else, they
-can do it by hand). This should follow the same pattern as Gauge/Histogram.
+コードの時間を秒で計る何らかの方法。
+Pythonでは、これは`time()`decorator/context managerである。
+Javaでは、これは`startTimer`/`observeDuration`である。
+秒以外の単位を提供してはならない（MUST NOT）。ユーザーは他の単位が欲しければ自分ですることができる。
+これは、ゲージ/ヒストグラムと同じパターンに従っているべきである。
 
-Summary `_count`/`_sum` MUST start at 0.
+サマリーの`_count`/`_sum`は0から始まらなければならない（MUST）。
 
-### Histogram
+### ヒストグラム
 
-[Histograms](/docs/concepts/metric_types/#histogram) allow aggregatable
-distributions of events, such as request latencies. This is at its core a
-counter per bucket.
+[ヒストグラム](/docs/concepts/metric_types/#histogram)は、リクエストのレイテンシーのようなイベントの分布が集約可能になる。
+ヒストグラムは、本質的には、バケットごとのカウンターである。
 
-A histogram MUST NOT allow `le` as a user-set label, as `le` is used internally
-to designate buckets.
+ヒストグラムは、内部的にバケットに`le`が割り当てられるので、`le`をユーザーにセットされるラベルとして許可してはならない（MUST NOT）。
 
-A histogram MUST offer a way to manually choose the buckets. Ways to set
-buckets in a `linear(start, width, count)` and `exponential(start, factor,
-count)` fashion SHOULD be offered. Count MUST exclude the `+Inf` bucket.
+ヒストグラムは、手動でバケットを選択する方法を提供しなければならない。
+`linear(start, width, count)`と`exponential(start, factor,count)`のような方法でバケットをセットする方法を提供する必要がある（SHOULD）。
+カウントは`+Inf`のバケットを含んでいなければならない（MUST）。
 
-A histogram SHOULD have the same default buckets as other client libraries.
-Buckets MUST NOT be changeable once the metric is created.
+ヒストグラムは、他のクライアントライブラリと同じデフォルトのバケットを持つ必要がある（SHOULD）。
+バケットは、一旦作成されたら、変更可能であってはならない（MUST NOT）。
 
-A histogram MUST have the following methods:
+ヒストグラムは以下のメソッドを持たなければならない（MUST）。
 
-* `observe(double v)`: Observe the given amount
+* `observe(double v)`: 与えられた量を観測する
 
-A histogram SHOULD have the following methods:
+ヒストグラムは以下のメソッドを持つ必要がある（SHOULD）。
 
-Some way to time code for users in seconds. In Python this is the `time()`
-decorator/context manager. In Java this is `startTimer`/`observeDuration`.
-Units other than seconds MUST NOT be offered (if a user wants something else,
-they can do it by hand). This should follow the same pattern as Gauge/Summary.
+コードの時間を秒で計る何らかの方法。
+Pythonでは、これは`time()`decorator/context managerである。
+秒以外の単位を提供してはならない（MUST NOT）。ユーザーは他の単位が欲しければ自分ですることができる。
+これは、ゲージ/サマリーと同じパターンに従っているべきである。
 
-Histogram  `_count`/`_sum` and the buckets MUST start at 0.
+ヒストグラムの`_count`/`_sum`およびバケットは0から始まらなければならない（MUST）。
 
-**Further metrics considerations**
+**さらなるメトリクスの検討**
 
-Providing additional functionality in metrics beyond what’s documented above as
-makes sense for a given language is ENCOURAGED.
+ここまでに書かれていること以上の追加の機能を提供することは、それが特定の言語で意味をなすようなものならば、望ましい（ENCOURAGED）。
 
-If there’s a common use case you can make simpler then go for it, as long as it
-won’t encourage undesirable behaviours (such as suboptimal metric/label
-layouts, or doing computation in the client).
+よりシンプルにできるよくあるユースケースがあれば、望まない振る舞い（最適ではないメトリック/ラベルの構成、クライアントでの計算）が助長されない限り、そうすること。
 
-### Labels
+### ラベル
 
-Labels are one of the [most powerful
-aspects](/docs/practices/instrumentation/#use-labels) of Prometheus, but
-[easily abused](/docs/practices/instrumentation/#do-not-overuse-labels).
-Accordingly client libraries must be very careful in how labels are offered to
-users.
+ラベルは、Prometheusの[最も強力な機能](/docs/practices/instrumentation/#use-labels)の1つであるが、[簡単に使い過ぎになる](/docs/practices/instrumentation/#do-not-overuse-labels)。
+従って、クライアントライブラリは、ラベルがどのようにユーザーに提供されるかについてかなり気をつけなければならない。
 
-Client libraries MUST NOT under any circumstances allow users to have different
-label names for the same metric for Gauge/Counter/Summary/Histogram or any
-other Collector offered by the library.
+クライアントライブラリは、いかなる状況でも、ゲージ/カウンター/サマリー/ヒストグラムや他のいかなるCollectorに対しても、ユーザーに同じメトリックに異なるラベルを持たせることがあってはならない（MUST NOT）。
 
-Metrics from custom collectors should almost always have consistent label
-names. As there are still rare but valid use cases where this is not the case,
-client libraries should not verify this.
+独自のcollectorからのメトリックは、ほぼ常に、一貫したラベル名になっているべきである。
+かなり稀だがこれが当てはまらない正当なユースケースもあるので、クライアントライブラリはラベル名の検証をすべきではない。
 
-While labels are powerful, the majority of metrics will not have labels.
-Accordingly the API should allow for labels but not dominate it.
+ラベルが強力である一方で、メトリクスの大多数はラベルを持たないだろう。
+したがって、APIはラベルを許すべきだが、強制すべきではない。
 
-A client library MUST allow for optionally specifying a list of label names at
-Gauge/Counter/Summary/Histogram creation time. A client library SHOULD support
-any number of label names. A client library MUST validate that label names meet
-the [documented
-requirements](/docs/concepts/data_model/#metric-names-and-labels).
+クライアントライブラリは、ゲージ/カウンター/サマリー/ヒストグラム作成時点でラベル名のリストをオプションで指定できるようにしなければならない（MUST）。
+クライアントライブラリは、任意の数のラベル名をサポートする必要がある（SHOULD）。
+クライアントライブラリは、ラベル名が[ドキュメントに書かれている要件](/docs/concepts/data_model/#metric-names-and-labels)に合っているか検証しなければならない（MUST）。
 
-The general way to provide access to labeled dimension of a metric is via a
-`labels()` method that takes either a list of the label values or a map from
-label name to label value and returns a "Child". The usual
-`.inc()`/`.dec()`/`.observe()` etc. methods can then be called on the Child.
+あるメトリックのラベル付けされた要素にアクセスする一般的な方法は、ラベル値のリストまたはラベル名からラベル値へのマップのどちらかをとり、"Child"を返す`labels()`メソッドである。
+その後、`.inc()`/`.dec()`/`.observe()`などのメソッドは、そのChildに対して呼び出すことができる。
 
-The Child returned by `labels()` SHOULD be cacheable by the user, to avoid
-having to look it up again - this matters in latency-critical code.
+`labels()`が返したChildは、再び検索する必要性を避けるために、ユーザーによるキャッシュが可能になっている必要がある（SHOULD）。
+これは、レイテンシーが致命的なコードで問題になる。
 
 Metrics with labels SHOULD support a `remove()` method with the same signature
 as `labels()` that will remove a Child from the metric no longer exporting it,
 and a `clear()` method that removes all Children from the metric. These
 invalidate caching of Children.
+ラベル付きのメトリクスは、`labels()`と同じシグネチャーを持つ`remove()`メソッドをサポートする必要がある（SHOULD）。
+メトリックからXXXChildを削除する
+`clear()`メソッドは、メトリックから全てのchildrenを削除する。
+これらのメソッドはChildrenのキャッシュを無効にする。
 
-There SHOULD be a way to initialize a given Child with the default value,
-usually just calling `labels()`. Metrics without labels MUST always be
-initialized to avoid [problems with missing
-metrics](/docs/practices/instrumentation/#avoid-missing-metrics).
+与えられたChildをデフォルト値で初期化する方法（普通は`labels()`を呼び出すだけ）がある必要がある（SHOULD）。
+[メトリクスの欠落の問題](/docs/practices/instrumentation/#avoid-missing-metrics)を回避するために、ラベルのないメトリクスは常に初期化されなければならない。
 
-### Metric names
+### メトリック名
 
-Metric names must follow the
-[specification](/docs/concepts/data_model/#metric-names-and-labels). As with
-label names, this MUST be met for uses of Gauge/Counter/Summary/Histogram and
-in any other Collector offered with the library.
+メトリック名は、[仕様](/docs/concepts/data_model/#metric-names-and-labels)に従わなければならない。
+ラベル名と同様に、ゲージ/カウンター/サマリー/ヒストグラムの使い方およびそのライブラリで提供されている他のCollectorに合っていなければならない（MUST）。
 
-Many client libraries offer setting the name in three parts:
-`namespace_subsystem_name` of which only the `name` is mandatory.
+多くのクライアントライブラリが3つの部分からなる名前`namespace_subsystem_name`を設定する方法を提供している。
+この中で`name`だけが必須である。
 
-Dynamic/generated metric names or subparts of metric names MUST be discouraged,
-except when a custom Collector is proxying from other
-instrumentation/monitoring systems. Generated/dynamic metric names are a sign
-that you should be using labels instead.
+独自のCollectorが他の監視システムからプロキシする場合を除いて、メトリック名またはメトリック名の一部を動的にするまたは生成することは、抑止されなければならない（MUST）。
+メトリック名を動的にするまたは生成することは、代わりにラベルを使うべきであるという兆しである。
 
-### Metric description and help
+### メトリックの説明とヘルプ
 
-Gauge/Counter/Summary/Histogram MUST require metric descriptions/help to be
-provided.
+ゲージ/カウンター/サマリー/ヒストグラムは、メトリックの説明とヘルプが提供されることを要求しなければならない（MUST）。
 
-Any custom Collectors provided with the client libraries MUST have
-descriptions/help on their metrics.
+クライアントライブラリに付属する独自のCollectorには、そのメトリクスに関する説明とヘルプがなければならない（MUST）。
 
-It is suggested to make it a mandatory argument, but not to check that it’s of
-a certain length as if someone really doesn’t want to write docs we’re not
-going to convince them otherwise. Collectors offered with the library (and
-indeed everywhere we can within the ecosystem) SHOULD have good metric
-descriptions, to lead by example.
+必須の引数にするが特定の長さになっていることをチェックはしないことが提案されている。
+なぜなら、誰かがdocsを書きたくないなら我々はその人にdocsが書きたくなるように説得することはないからである。
+ライブラリで提供されているCollector（および、実際にはエコシステムのできる限り全ての所で）は、良質のメトリックの説明を提供する必要がある（SHOULD）。
 
-## Exposition
+## 出力
 
-Clients MUST implement the text-based exposition format outlined in the
-[exposition formats](/docs/instrumenting/exposition_formats) documentation.
+クライアントは、[出力フォーマット](/docs/instrumenting/exposition_formats)のドキュメントに書かれているテキストベースの出力フォーマットを実装しなければならない（MUST）。
 
-Reproducible order of the exposed metrics is ENCOURAGED (especially for human
-readable formats) if it can be implemented without a significant resource cost.
+多大なコストを必要とせず実装できるなら、（特に人間にとって可読性の高いフォーマットにするために）出力されるメトリクスを再現性のある順番にすることが望ましい（ENCOURAGED）。
 
 ## Standard and runtime collectors
 
-Client libraries SHOULD offer what they can of the Standard exports, documented
-below.
+クライアントライブラリは、後述の標準的なライブラリが出力しているもののうち可能なものは提供する必要がある（SHOULD）。
 
-These SHOULD be implemented as custom Collectors, and registered by default on
-the default CollectorRegistry. There SHOULD be a way to disable these, as there
-are some very niche use cases where they get in the way.
+これらは、独自のcollectorとして実装され、デフォルトでデフォルトのCollectorRegistryに登録される必要がある（SHOULD）。
+これらが邪魔になるとてもニッチなユースケースがあるので、これらを無効にする方法がある必要がある（SHOULD）。
 
-### Process metrics
+### プロセスのメトリクス
 
-These exports should have the prefix `process_`. If a language or runtime
-doesn't expose one of the variables it'd just not export it. All memory values
-in bytes, all times in unixtime/seconds.
+これらの出力は`process_`というプリフィックスをつける必要がある。
+言語やランタイムからこれらの数値のどれかを取得できないならば、クライアントライブラリがそれを出力することはないだろう。
+全てのメモリ関連の値の単位はバイト、全ての時間関連の値はunixtime/秒である。
 
-| Metric name                        | Help string                                            | Unit             |
-| ---------------------------------- | ------------------------------------------------------ | ---------------  |
-| `process_cpu_seconds_total`        | Total user and system CPU time spent in seconds.       | seconds          |
-| `process_open_fds`                 | Number of open file descriptors.                       | file descriptors |
-| `process_max_fds`                  | Maximum number of open file descriptors.               | file descriptors |
-| `process_virtual_memory_bytes`     | Virtual memory size in bytes.                          | bytes            |
-| `process_virtual_memory_max_bytes` | Maximum amount of virtual memory available in bytes.   | bytes            |
-| `process_resident_memory_bytes`    | Resident memory size in bytes.                         | bytes            |
-| `process_heap_bytes`               | Process heap size in bytes.                            | bytes            |
-| `process_start_time_seconds`       | Start time of the process since unix epoch in seconds. | seconds          |
+| メトリック名                         | ヘルプ文字列                          | 単位         |
+| ---------------------------------- | ----------------------------------- | ----------  |
+| `process_cpu_seconds_total`        | ユーザーおよびシステムの消費CPU時間（秒） | 秒           |
+| `process_open_fds`                 | オープンしているファイル記述子の数       | ファイル記述子 |
+| `process_max_fds`                  | オープンできるファイル記述子の上限       | ファイル記述子 |
+| `process_virtual_memory_bytes`     | 仮想メモリのサイズ（バイト）            | バイト        |
+| `process_virtual_memory_max_bytes` | 利用可能な仮想メモリの上限（バイト）     | バイト        |
+| `process_resident_memory_bytes`    | 常駐メモリのサイズ（バイト）            | バイト        |
+| `process_heap_bytes`               | プロセスのヒープサイズ（バイト）         | バイト        |
+| `process_start_time_seconds`       | プロセスの開始時間（unixエポックからの秒）| 秒           |
 
-### Runtime metrics
+### ランタイムのメトリクス
 
-In addition, client libraries are ENCOURAGED to also offer whatever makes sense
-in terms of metrics for their language’s runtime (e.g. garbage collection
-stats), with an appropriate prefix such as `go_`, `hostspot_` etc.
+さらに、クライアントライブラリは、言語のランタイムのメトリクスという観点で意味のあるもの（例えば、GCの統計）ならなんでも、適切なプリフィックス（例えば`go_`、`hostspot_`など）を付けて提供することが望ましい（ENCOURAGED）。
 
-## Unit tests
+## 単体テスト
 
-Client libraries SHOULD have unit tests covering the core instrumentation
-library and exposition.
+クライアントライブラリには、メトリクス組み込みの中核および出力をカバーする単体テストがある必要がある（SHOULD）。
 
-Client libraries are ENCOURAGED to offer ways that make it easy for users to
-unit-test their use of the instrumentation code. For example, the
-`CollectorRegistry.get_sample_value` in Python.
+クライアントライブラリは、ユーザーが自分のメトリクス組み込みコードを単体テストするのが簡単になる方法を提供することが望ましい（ENCOURAGED）。
+例えば、Pythonでは、`CollectorRegistry.get_sample_value`がある。
 
 ## Packaging and dependencies
 
-Ideally, a client library can be included in any application to add some
-instrumentation without breaking the application.
+理想を言えば、クライアントライブラリは、どんなアプリケーションにも、アプリケーションを壊すことなく、メトリクスを追加するためにインクルードできる。
 
-Accordingly, caution is advised when adding dependencies to the client library.
-For example, if you add a library that uses a Prometheus client that requires
-version x.y of a library but the application uses x.z elsewhere, will that have
-an adverse impact on the application?
+したがって、クライアントライブラリへの依存を追加する際には注意すること。
+例えば、あるライブラリのバージョンx.yを必要とするPrometheusクライアントを使うライブラリを追加したが、そのアプリケーションがどこかでバージョンx.zを使っているとすると、アプリケーションにとって好ましくない影響があるだろうか？
 
-It is suggested that where this may arise, that the core instrumentation is
-separated from the bridges/exposition of metrics in a given format. For
-example, the Java simpleclient `simpleclient` module has no dependencies, and
-the `simpleclient_servlet` has the HTTP bits.
+こういった問題が出てきたら、中核となるメトリクス組み込みを、特定のフォーマットでのメトリクスのブリッジ/出力から分離することが推奨されている。
+例えば、Javaのモジュール`simpleclient`は依存がなく、`simpleclient_servlet`がHTTPの依存を少し持っている。
 
-## Performance considerations
+## パフォーマンスの考慮
 
-As client libraries must be thread-safe, some form of concurrency control is
-required and consideration must be given to performance on multi-core machines
-and applications.
+クライアントライブラリはスレッドセーフでなければならないので、なんらかの形で並行性の制御が必要であり、マルチコアのマシンとアプリケーション上でのパフォーマンスを考慮しなければならない。
 
-In our experience the least performant is mutexes.
+我々の経験では、mutexのパフォーマンスが一番低い。
 
-Processor atomic instructions tend to be in the middle, and generally
-acceptable.
+プロセッサのアトミックな操作が中間的であり、一般的に許容される。
 
-Approaches that avoid different CPUs mutating the same bit of RAM work best,
-such as the DoubleAdder in Java’s simpleclient. There is a memory cost though.
+Javaのsimpleclientで使われているDoubleAdderのような、異なるCPUがRAMの同じビットを変更するのを防ぐ方法が一番うまく行く。
+ただし、メモリのコストがある。
 
-As noted above, the result of `labels()` should be cacheable. The concurrent
-maps that tend to back metric with labels tend to be relatively slow.
-Special-casing metrics without labels to avoid `labels()`-like lookups can help
-a lot.
+上で述べたように、`labels()`の結果はキャッシュ可能である必要がある。
+ラベル付きのメトリックに使われることが多いconcurrent mapは、かなり遅くなりがちである。
+ラベルのないメトリクスが`labels()`のような検索を避けるように特別に場合分けするのはかなり役立つ。
 
-Metrics SHOULD avoid blocking when they are being incremented/decremented/set
-etc. as it’s undesirable for the whole application to be held up while a scrape
-is ongoing.
+スクレイプの最中にアプリケーション全体が止まってしまうのは望ましくないので、メトリクスがincremented/decremented/setなどをされている間にブロックするのを避ける必要がある（SHOULD）。
 
-Having benchmarks of the main instrumentation operations, including labels, is
-ENCOURAGED.
+ラベルを含む主なメトリクス組み込み操作のベンチマークがあることが望ましい（ENCOURAGED）。
 
-Resource consumption, particularly RAM, should be kept in mind when performing
-exposition. Consider reducing the memory footprint by streaming results, and
-potentially having a limit on the number of concurrent scrapes.
+出力をする際には、リソース消費（特にRAM）に気をつける必要がある。
+結果を少しずつ出力したり、同時にスクレイプする数に制限を設けることで、メモリフットプリントの削減を検討すること。

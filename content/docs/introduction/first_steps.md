@@ -1,23 +1,29 @@
 ---
-title: First steps
+title: はじめの一歩
 sort_rank: 3
 ---
 
-# First steps with Prometheus
+# Prometheusのはじめの一歩
 
-Welcome to Prometheus! Prometheus is a monitoring platform that collects metrics from monitored targets by scraping metrics HTTP endpoints on these targets. This guide will show you to how to install, configure and monitor our first resource with Prometheus. You'll download, install and run Prometheus. You'll also download and install an exporter, tools that expose time series data on hosts and services. Our first exporter will be Prometheus itself, which provides a wide variety of host-level metrics about memory usage, garbage collection, and more.
+Prometheusへようこそ！
+Prometheusは、監視対象のHTTPエンドポイントをスクレイプすることで監視対象からメトリクスを収集する監視プラットフォームである。
+このガイドでは、インストールの仕方、設定の仕方、Prometheusでリソースを監視する方法を示す。
+Prometheusをダウンロード、インストール、実行することになる。
+また、exporter（ホストとサービスについての時系列を出力するツール）をダウンロード、インストールする。
+最初のexporterは、Prometheus自体（メモリ使用、ガベージコレクションなどのホストレベルの様々なメトリクスを提供する）となる。
 
-## Downloading Prometheus
 
-[Download the latest release](/download) of Prometheus for your platform, then
-extract it:
 
+## Prometheusのダウンロード
+
+自分のプラットフォームに合った[最新リリースをダウンロード](/download)し、展開する。
 ```language-bash
 tar xvfz prometheus-*.tar.gz
 cd prometheus-*
 ```
 
-The Prometheus server is a single binary called `prometheus` (or `prometheus.exe` on Microsoft Windows). We can run the binary and see help on its options by passing the `--help` flag.
+Prometheusサーバーは、`prometheus`（Microsoft Windows上では`prometheus.exe`）という1つのバイナリである。
+`--help`を渡すことで、バイナリを実行してオプションに関するヘルプを見ることができる。
 
 ```language-bash
 ./prometheus --help
@@ -28,13 +34,15 @@ The Prometheus monitoring server
 . . .
 ```
 
-Before starting Prometheus, let's configure it.
+Prometheusを起動する前に、設定をしよう。
 
-## Configuring Prometheus
 
-Prometheus configuration is [YAML](http://www.yaml.org/start.html). The Prometheus download comes with a sample configuration in a file called `prometheus.yml` that is a good place to get started.
+## Prometheusの設定
 
-We've stripped out most of the comments in the example file to make it more succinct (comments are the lines prefixed with a `#`).
+Prometheusの設定は、[YAML](http://www.yaml.org/start.html)である。
+Prometheusをダウンロードすると、`prometheus.yml`という設定例が付属している。
+
+簡潔にするため、このサンプルファイルのほとんどのコメントを削除してある（コメントは`#`で始まる行である）。
 
 ```language-yaml
 global:
@@ -51,80 +59,91 @@ scrape_configs:
       - targets: ['localhost:9090']
 ```
 
-There are three blocks of configuration in the example configuration file: `global`, `rule_files`, and `scrape_configs`.
+このサンプル設定ファイルには、3つの設定のブロック、`global`、`rule_files`、`scrape_configs`がある。
 
-The `global` block controls the Prometheus server's global configuration. We have two options present. The first, `scrape_interval`, controls how often Prometheus will scrape targets. You can override this for individual targets. In this case the global setting is to scrape every 15 seconds. The `evaluation_interval` option controls how often Prometheus will evaluate rules. Prometheus uses rules to create new time series and to generate alerts.
+`global`ブロックは、Prometheusサーバーのグローバルな設定を制御する。
+ここでは2つの項目が示されている。
+1つ目の`scrape_interval`は、どれぐらい頻繁にPrometheusが監視対象をスクレイプするかを制御する。
+これは、個別の監視対象についてこれを上書きすることもできる。
+この例では、グローバルな設定としては、15秒ごとにスクレイプすることになる。
+`evaluation_interval`は、どれぐらい頻繁にPrometheusがルールを評価するかを制御する。
+Prometheusは、新しい時系列を作成したり、アラートを生成するためにルールを使う。
 
-The `rule_files` block specifies the location of any rules we want the Prometheus server to load. For now we've got no rules.
+`rule_files`ブロックは、Prometheusサーバーに読み込んで欲しいルールの場所を指定する。
+この例では、ルールはない。
 
-The last block, `scrape_configs`, controls what resources Prometheus monitors. Since Prometheus also exposes data about itself as an HTTP endpoint it can scrape and monitor its own health. In the default configuration there is a single job, called `prometheus`, which scrapes the time series data exposed by the Prometheus server. The job contains a single, statically configured, target, the `localhost` on port `9090`. Prometheus expects metrics to be available on targets on a path of `/metrics`. So this default job is scraping via the URL: http://localhost:9090/metrics.
+最後のブロック`scrape_configs`は、どんなリソースをPrometheusが監視するかを制御する。
+Prometheus自身もまた自分についてのデータをHTTPエンドポイントとして出力しているので、自分自身の状態を監視することができる。
+デフォルトの設定では、`prometheus`というジョブがあり、Prometheusサーバーが出力する時系列データをスクレイプする。
+そのジョブには、静的に設定された1つのターゲット、`localhost`のポート`9090`が含まれている。
+Prometheusは、ターゲットのパス`/metrics`でメトリクスが取得可能であることを想定している。
+したがって、このデフォルトジョブはURL[http://localhost:9090/metrics](http://localhost:9090/metrics)をスクレイプする。
 
-The time series data returned will detail the state and performance of the Prometheus server.
+ここで返される時系列データは、Prometheusサーバーの状態とパフォーマンスの詳細が含まれる。
 
-For a complete specification of configuration options, see the
-[configuration documentation](/docs/operating/configuration).
+設定項目の完全な仕様については、[設定のドキュメント](/docs/operating/configuration)を参照すること。
 
-## Starting Prometheus
+## Prometheusの起動
 
-To start Prometheus with our newly created configuration file, change to the directory containing the Prometheus binary and run:
+ここで作成した設定ファイルでPrometheusを起動するには、Prometheusのバイナリを含むディレクトリに移動し、以下のコマンドを実行する。
 
 ```language-bash
 ./prometheus --config.file=prometheus.yml
 ```
 
-Prometheus should start up. You should also be able to browse to a status page about itself at http://localhost:9090. Give it about 30 seconds to collect data about itself from its own HTTP metrics endpoint.
+これでPrometheusが起動するはずである。
+また、[http://localhost:9090](http://localhost:9090)で、Prometheus自体の状態を見ることができる。
+自分自身のHTTPエンドポイントからデータを収集するため約30秒待つ。
 
-You can also verify that Prometheus is serving metrics about itself by
-navigating to its own metrics endpoint: http://localhost:9090/metrics.
+メトリクスのエンドポイント[http://localhost:9090/metrics](http://localhost:9090/metrics)に移動することで、
+Prometheusが出力しているメトリクスを確認することもできる。
 
-## Using the expression browser
+## expressionブラウザの利用
 
-Let us try looking at some data that Prometheus has collected about itself. To
-use Prometheus's built-in expression browser, navigate to
-http://localhost:9090/graph and choose the "Console" view within the "Graph"
-tab.
+Prometheusが自分自身について収集したデータを見てみよう。
+Prometheusの組み込みexpressionブラウザーを利用するには、[http://localhost:9090/graph](http://localhost:9090/graph)に移動し、GraphタブのConsoleビューを選択する。
 
-As you can gather from http://localhost:9090/metrics, one metric that
-Prometheus exports about itself is called
-`promhttp_metric_handler_requests_total` (the total number of `/metrics` requests the Prometheus server has served). Go ahead and enter this into the expression console:
+[http://localhost:9090/metrics](http://localhost:9090/metrics)から取得した通り、Prometheusが自分自身について出力したメトリクスの1つに`promhttp_metric_handler_requests_total`（Prometheusサーバーが返した`/metrics`へのリクエストの数）がある。expressionコンソールに以下の式を入力してみよう。
 
 ```
 promhttp_metric_handler_requests_total
 ```
 
-This should return a number of different time series (along with the latest value recorded for each), all with the metric name `promhttp_metric_handler_requests_total`, but with different labels. These labels designate different requests statuses.
+これは、いくつかの異なる時系列を、`promhttp_metric_handler_requests_total`というメトリック名、それぞれ異なるラベル、それぞれ記録された最新の値とともに返すはずである。
+これらのラベルは異なるレスポンスステータスを示している。
 
-If we were only interested in requests that resulted in HTTP code `200`, we could use this query to retrieve that information:
+もし、HTTPコード200になったリクエストに興味があるだけなら、その情報を取得するために以下のクエリを使うことができる。
 
 ```
 promhttp_metric_handler_requests_total{code="200"}
 ```
 
-To count the number of returned time series, you could write:
+返された時系列の数を数えるために、以下のように入力することができる。
 
 ```
 count(promhttp_metric_handler_requests_total)
 ```
 
-For more about the expression language, see the
-[expression language documentation](/docs/querying/basics/).
+クエリ言語についてさらに知りたい場合は、[クエリ言語のドキュメント](/docs/querying/basics/)を参照すること。
 
-## Using the graphing interface
+## グラフ化インターフェースの利用
 
-To graph expressions, navigate to http://localhost:9090/graph and use the "Graph" tab.
+式をグラフ化するには、[http://localhost:9090/graph](http://localhost:9090/graph)に移動し、Graphタブを利用する。
 
-For example, enter the following expression to graph the per-second HTTP request rate returning status code 200 happening in the self-scraped Prometheus:
+例えば、ステータスコード200を返すHTTPリクエストの秒間レートをグラフ化するために、以下の式を入力してみよう。
 
 ```
 rate(promhttp_metric_handler_requests_total{code="200"}[1m])
 ```
 
-You can experiment with the graph range parameters and other settings.
+グラフ幅のパラメーターや他の設定を試すことができる。
 
-## Monitoring other targets
+## 他のターゲットの監視
 
-Collecting metrics from Prometheus alone isn't a great representation of Prometheus' capabilities. To get a better sense of what Prometheus can do, we recommend exploring documentation about other exporters. The [Monitoring Linux or macOS host metrics using a node exporter](/docs/guides/node-exporter) guide is a good place to start.
+Prometheusに何ができるかもっとよく理解するためには、他のexporterについてのドキュメントを調べてみることを推奨する。
+まずは、[Node Exporterを用いたLinuxホストのメトリクス監視](/docs/guides/node-exporter)が良いだろう。
 
-## Summary
+## まとめ
 
-In this guide, you installed Prometheus, configured a Prometheus instance to monitor resources, and learned some basics of working with time series data in Prometheus' expression browser. To continue learning about Prometheus, check out the [Overview](/docs/introduction/overview) for some ideas about what to explore next.
+このガイドでは、Prometheusをインストールし、リソースを監視するようにPrometheusインスタンスを設定し、Prometheusのexpressionブラウザで時系列データを扱う基本を学んだ。
+Prometheusを学習し続けるには、次に何を探すべきか理解するために[概要](/docs/introduction/overview)を見てみると良い。

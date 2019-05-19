@@ -1,530 +1,367 @@
 ---
-title: Writing exporters
+title: exporterの書き方
 sort_rank: 5
 ---
 
-# Writing exporters
+# exporterの書き方
 
-If you are instrumenting your own code, the [general rules of how to
-instrument code with a Prometheus client
-library](/docs/practices/instrumentation/) should be followed. When
-taking metrics from another monitoring or instrumentation system, things
-tend not to be so black and white.
+自分自身のコードにメトリクスを組み込む場合は、[Prometheusクライアントライブラリを用いたコードへのメトリクスの組み込み方の一般的なルール](/docs/practices/instrumentation/)に従うべきである。
+他の監視システムやメトリクス組み込みシステムからメトリクスを取得する場合は、物事はそこまで白黒はっきりしていない。
 
-This document contains things you should consider when writing an
-exporter or custom collector. The theory covered will also be of
-interest to those doing direct instrumentation.
+このドキュメントには、exporterや独自コレクターを書く時に考慮すべきことが含まれている。
+ここで述べられている理論は、直接メトリクス組み込みをする人にも興味深いだろう。
 
-If you are writing an exporter and are unclear on anything here, please
-contact us on IRC (#prometheus on Freenode) or the [mailing
-list](/community).
+もしexporterを書いていて、このページのどこかが分からなければ、IRC(#prometheus on Freenode)または[メーリングリスト](https://prometheus.io/community)で私たちに連絡して下さい。
 
 ## Maintainability and purity
 
-The main decision you need to make when writing an exporter is how much
-work you’re willing to put in to get perfect metrics out of it.
+exporterを書く際に決めなければいけない主なことは、完璧なメトリクスを得るためにどれぐらいの労力をかけるつもりがあるのかということである。
 
-If the system in question has only a handful of metrics that rarely
-change, then getting everything perfect is an easy choice, a good
-example of this is the [HAProxy
-exporter](https://github.com/prometheus/haproxy_exporter).
+もし目的のシステムにほぼ変化しないいくつかのメトリクスしかないなら、全てを完璧にするのは簡単な選択である。
+この良い例が、[HAProxy exporter](https://github.com/prometheus/haproxy_exporter)である。
 
-On the other hand, if you try to get things perfect when the system has
-hundreds of metrics that change frequently with new versions, then
-you’ve signed yourself up for a lot of ongoing work. The [MySQL
-exporter](https://github.com/prometheus/mysqld_exporter) is on this end
-of the spectrum.
+他方、新バージョンで頻繁に変わる何百ものメトリクスがあるシステムで完璧にしようとすれば、長期間にわたる多くの仕事の契約をした事になる。[MySQL exporter](https://github.com/prometheus/mysqld_exporter)がこちら側の極端な例である。
 
-The [node exporter](https://github.com/prometheus/node_exporter) is a
-mix of these, with complexity varying by module. For example, the
-`mdadm` collector hand-parses a file and exposes metrics created
-specifically for that collector, so we may as well get the metrics
-right. For the `meminfo` collector the results vary across kernel
-versions so we end up doing just enough of a transform to create valid
-metrics.
+[node exporter](https://github.com/prometheus/node_exporter)は、これらの中間にあり、モジュールごとに様々な複雑さがある。
+例えば、`mdadm`コレクターは、ファイルを独自解析して、特にこのコレクターのために生成されたメトリクスを出力する。
+`meminfo`コレクターに対してはカーネルバージョンによって結果が異なるので、正しいメトリクスを生成するために十分な変換をすることになる。
 
 ## Configuration
 
-When working with applications, you should aim for an exporter that
-requires no custom configuration by the user beyond telling it where the
-application is.  You may also need to offer the ability to filter out
-certain metrics if they may be too granular and expensive on large
-setups, for example the [HAProxy
-exporter](https://github.com/prometheus/haproxy_exporter) allows
-filtering of per-server stats. Similarly, there may be expensive metrics
-that are disabled by default.
+アプリケーションに取り組んでいる時には、アプリケーションがどこにあるか以上の独自設定をユーザーがする必要のないexporterを目指すべきである。
+もし粒度が細か過ぎるなら、特定のメトリクスを外せるようにしてあげなければいけないかもしれない。
+例えば、[HAProxy exporter](https://github.com/prometheus/haproxy_exporter)は、サーバー毎の統計をフィルタリングできるようになっている。
+同様に、コストの高いのでデフォルトでは無効になっているメトリクスがあるかもしれない。
 
-When working with other monitoring systems, frameworks and protocols you
-will often need to provide additional configuration or customization to
-generate metrics suitable for Prometheus. In the best case scenario, a
-monitoring system has a similar enough data model to Prometheus that you
-can automatically determine how to transform metrics. This is the case
-for [Cloudwatch](https://github.com/prometheus/cloudwatch_exporter),
-[SNMP](https://github.com/prometheus/snmp_exporter) and
-[collectd](https://github.com/prometheus/collectd_exporter). At most, we
-need the ability to let the user select which metrics they want to pull
-out.
+他の監視システム、フレームワーク、プロトコルに取り組んでいるなら、
+Prometheusに適したメトリクスを生成するように、追加設定やカスタマイズを提供しなければならないだろう。
+一番良いケースでは、メトリクスの変換方法が自動的に決まるぐらいPrometheusに十分に似ているデータモデルを持っている。
+[Cloudwatch](https://github.com/prometheus/cloudwatch_exporter)や[SNMP](https://github.com/prometheus/snmp_exporter)、[collectd](https://github.com/prometheus/collectd_exporter)がこのケースに当てはまる。
+この場合、せいぜい、ユーザーがどのメトリクスを取り出したいかを選択できる機能が必要である。
 
-In other cases, metrics from the system are completely non-standard,
-depending on the usage of the system and the underlying application.  In
-that case the user has to tell us how to transform the metrics. The [JMX
-exporter](https://github.com/prometheus/jmx_exporter) is the worst
-offender here, with the
-[Graphite](https://github.com/prometheus/graphite_exporter) and
-[StatsD](https://github.com/prometheus/statsd_exporter) exporters also
-requiring configuration to extract labels.
+他のケースでは、そのシステムから来るメトリクスは完全に非標準的であり、システムの使い方やその下にあるアプリケーションに依存している。
+そのようなケースでは、メトリクスをどのように変換するかをユーザーが指定する必要がある。
+この一番厄介な例が[JMX exporter](https://github.com/prometheus/jmx_exporter)である。
+[Graphite exporter](https://github.com/prometheus/graphite_exporter)と[StatsD exporter](https://github.com/prometheus/statsd_exporter)もラベルを抽出するために設定が必要である。
 
-Ensuring the exporter works out of the box without configuration, and
-providing a selection of example configurations for transformation if
-required, is advised.
+インストールしただけで設定なしにexporterが動くことを保証すること、および変換に設定が必要ならそのサンプル集を提供することが推奨される。
 
-YAML is the standard Prometheus configuration format, all configuration
-should use YAML by default.
+YAMLが標準のPrometheus設定フォーマットであり、全ての設定はデフォルトでYAMLを利用するべきである。
 
-## Metrics
+##  メトリクス
 
-### Naming
+### 命名
 
-Follow the [best practices on metric naming](/docs/practices/naming).
+[メトリック名とラベル名ベストプラクティス](/docs/practices/naming)に従うこと。
 
-Generally metric names should allow someone who is familiar with
-Prometheus but not a particular system to make a good guess as to what a
-metric means.  A metric named `http_requests_total` is not extremely
-useful - are these being measured as they come in, in some filter or
-when they get to the user’s code?  And `requests_total` is even worse,
-what type of requests?
+一般的に、メトリック名は、Prometheusには慣れていても特定のシステムには慣れていない人がメトリックの意味を推測しやすくなっているべきである。
+`http_requests_total`という名前は、物凄く有益という訳ではない（リクエストが入ってきた時に測られるのだろうか？何らかのフィルターの中で測られるのだろうか？それともユーザーのコードに到達した時に測れるのだろうか？）。
+`requests_total`はさらに悪い。どんな種類のリクエストなのか分からない。
 
-With direct instrumentation, a given metric should exist within exactly
-one file. Accordingly, within exporters and collectors, a metric should
-apply to exactly one subsystem and be named accordingly.
+メトリクスを直接組み込む場合、あるメトリックは1つのファイルの中だけに存在しているべきである。
+したがって、exporterやcollectorの中でメトリックは1つのサブシステムにだけ適用されるべきであり、それに従って命名されるべきである。
 
-Metric names should never be procedurally generated, except when writing
-a custom collector or exporter.
+メトリック名は、カスタムcollectorやexporterを書いている時以外は、決して機械的に生成してはいけない。
 
-Metric names for applications should generally be prefixed by the
-exporter name, e.g. `haproxy_up`.
+アプリケーションのためのメトリック名は、一般的に、exporter名で始めるべきである（例 `haproxy_up`）。
 
-Metrics must use base units (e.g. seconds, bytes) and leave converting
-them to something more readable to graphing tools. No matter what units
-you end up using, the units in the metric name must match the units in
-use. Similarly, expose ratios, not percentages. Even better, specify a
-counter for each of the two components of the ratio.
+メトリクスには基本単位（秒やバイト）を使うべきである。単位を読みやすく変換するのはグラフ化ツールに任せるべきである。
+どんな単位を使うことになったとしても、メトリック名に付ける単位は、使われている単位に合わせなければならない。
+同様に、パーセントではなく比率を使うべきである。
+その比率を成す二項目のカウンターを指定するとさらに良い。
 
-Metric names should not include the labels that they’re exported with,
-e.g. `by_type`, as that won’t make sense if the label is aggregated
-away.
+メトリック名は、一緒に出力されるラベルを含んではいけない。例えば、`by_type`は、集約されてラベルが亡くなった時に意味をなさなくなってしまう。
 
-The one exception is when you’re exporting the same data with different
-labels via multiple metrics, in which case that’s usually the sanest way
-to distinguish them. For direct instrumentation, this should only come
-up when exporting a single metric with all the labels would have too
-high a cardinality.
+一つの例外は、同じデータを異なるラベルで複数のメトリクスを通して出力する時である。
+こういう場合は、普通、メトリック名にラベルを含めるのがそれらのデータを区別するための最も合理的な方法となる。
+これは、直接のメトリクス組み込みでは、一つのメトリックを全てのラベル値と共に出力すると個数が多くなり過ぎる場合にだけ起こるはずである。
 
-Prometheus metrics and label names are written in `snake_case`.
-Converting `camelCase` to `snake_case` is desirable, though doing so
-automatically doesn’t always produce nice results for things like
-`myTCPExample` or `isNaN` so sometimes it’s best to leave them as-is.
+Prometheusのメトリクスとラベル名は、`snake_case`で書かれる。
+`camelCase`から`snake_case`に変換することが望ましいが、`myTCPExample`や`isNaN`のようなものに対しては自動で変換すると必ずしも良い結果にはならないので、そのままにしておくのが良い場合もある。
 
-Exposed metrics should not contain colons, these are reserved for user
-defined recording rules to use when aggregating.
+出力されるメトリクスはコロンを含んではならない。コロンは、集約する時にユーザー定義のレコーディングルールが使うために予約されている。
 
-Only `[a-zA-Z0-9:_]` are valid in metric names, any other characters
-should be sanitized to an underscore.
+メトリック名では`[a-zA-Z0-9:_]`のみが有効であり、他のあらゆる文字はアンダースコアに書き換えなければならない。
 
-The `_sum`, `_count`, `_bucket` and `_total` suffixes are used by
-Summaries, Histograms and Counters. Unless you’re producing one of
-those, avoid these suffixes.
+`_sum`、`_count`、`_bucket`、`_total`といったサフィックスは、サマリーやヒストグラム、カウンターで利用される。
+これらを生成するのでなければ、これらのサフィックスは避けること。
 
-`_total` is a convention for counters, you should use it if you’re using
-the COUNTER type.
+カウンターには`_total`を付けるのが慣例である。カウンター型を使う場合は、それに従うべきである。
 
-The `process_` and `scrape_` prefixes are reserved. It’s okay to add
-your own prefix on to these if they follow the [matching
-semantics](https://docs.google.com/document/d/1Q0MXWdwp1mdXCzNRak6bW5LLVylVRXhdi7_21Sg15xQ/edit).
-For example, Prometheus has `scrape_duration_seconds` for how long a
-scrape took, it's good practice to also have an exporter-centric metric,
-e.g. `jmx_scrape_duration_seconds`, saying how long the specific
-exporter took to do its thing. For process stats where you have access
-to the PID, both Go and Python offer collectors that’ll handle this for
-you. A good example of this is the [HAProxy
-exporter](https://github.com/prometheus/haproxy_exporter).
+プリフィックス`process_`と`scrape_`は、予約されている。
+独自のプリフィックスをこれらに追加することは、[matching
+semantics](https://docs.google.com/document/d/1Q0MXWdwp1mdXCzNRak6bW5LLVylVRXhdi7_21Sg15xQ/edit)に従っているのなら、問題ない。
+例えば、Prometheusには、スクレイプにどれぐらいかかったかを表す`scrape_duration_seconds`がある。
+また、特定のexporterがその処理にどれぐらいかかったかを表すexporterに関連するメトリック（例えば、`jmx_scrape_duration_seconds`）もあるのが良いプラクティスである。
+PIDへのアクセスが出来るプロセスの統計情報に関して、GoとPythonはこの処理をするコレクターを提供している。
+[HAProxy exporter](https://github.com/prometheus/haproxy_exporter)がこの良い例である。
 
-When you have a successful request count and a failed request count, the
-best way to expose this is as one metric for total requests and another
-metric for failed requests. This makes it easy to calculate the failure
-ratio. Do not use one metric with a failed or success label. Similarly,
-with hit or miss for caches, it’s better to have one metric for total and
-another for hits.
+成功したリクエスト数と失敗したリクエスト数がある場合、これを出力する最も良い方法は、1つのメトリックをリクエスト総数に、もう1つのメトリックを失敗したリクエスト数にすることである。
+これによってエラー率を計算するのが簡単になる。
+failedやsuccessというラベルを持つ1つのメトリックを使わないこと。
+同様に、キャッシュのヒットとミスに関しては、1つを総数、もう1つをヒット数にするのが良い。
 
-Consider the likelihood that someone using monitoring will do a code or
-web search for the metric name. If the names are very well-established
-and unlikely to be used outside of the realm of people used to those
-names, for example SNMP and network engineers, then leaving them as-is
-may be a good idea. This logic doesn’t apply for all exporters, for
-example the MySQL exporter metric's may be used by a variety of people,
-not just DBAs. A `HELP` string with the original name can provide most
-of the same benefits as using the original names.
+監視を利用している人がメトリック名でコード検索やWeb検索をする可能性を考慮すること。
+名前がうまく決められていてその名前に慣れている人達の範囲を超えて使われる可能性が低ければ（例えばSNMPとネットワークエンジニア）、
+名前をそのままにしておくのが良いだろう。
+この理論は全てのexporterに当てはまるわけではない。例えば、MySQL exporterのメトリクスは、DB管理者だけでなく色々な人に使われるだろう。
+`HELP`文字列に元々の名前を含めておくと、元々の名前を使うのと同程度の恩恵が得られるだろう。
 
-### Labels
+### ラベル
 
-Read the [general
-advice](/docs/practices/instrumentation/#things-to-watch-out-for) on
-labels.
+ラベルに関する[一般的なアドバイス](docs/practices/instrumentation/#things-to-watch-out-for)を読むこと。
 
-Avoid `type` as a label name, it’s too generic and often meaningless.
-You should also try where possible to avoid names that are likely to
-clash with target labels, such as `region`, `zone`, `cluster`,
-`availability_zone`, `az`, `datacenter`, `dc`, `owner`, `customer`,
-`stage`, `service`, `environment` and `env`. If, however, that’s what
-the application calls some resource, it’s best not to cause confusion by
-renaming it.
+ラベル名として`type`は避けること。
+一般的過ぎるし、多くの場合意味がない。
+`region`、`zone`、`cluster`、`availability_zone`、`az`、`datacenter`、`dc`、`owner`、`customer`、`stage`、`service`、`environment`、`env`のような、監視対象を表すラベルと衝突する可能性の高いラベルも、可能であれば避けること。
+ただし、アプリケーションがリソースをそのような名前で呼んでいるなら、名前変更による混乱を起こさないようにするのが良い。
 
-Avoid the temptation to put things into one metric just because they
-share a prefix. Unless you’re sure something makes sense as one metric,
-multiple metrics is safer.
+プリフィックスが共通しているというだけの理由で1つのメトリックにものを詰め込みたくなる誘惑に耐えること。
+1つのメトリックとして意味を成すという確信がなければ、複数のメトリクスにしておく方が安全である。
 
-The label `le` has special meaning for Histograms, and `quantile` for
-Summaries. Avoid these labels generally.
+`le`というラベルはヒストグラムにとって特別な意味があり、`quantile`というラベルはサマリーにとって特別な意味がある。
+一般的にこれらのラベルは避けること。
 
-Read/write and send/receive are best as separate metrics, rather than as
-a label. This is usually because you care about only one of them at a
-time, and it is easier to use them that way.
+Read/writeやsend/receiveは、ラベルではなく、別々のメトリクスにするのが良い。
+これらは、一度に考慮するのは普通どちらか1つについてであって、そのように使った方が簡単である。
 
-The rule of thumb is that one metric should make sense when summed or
-averaged.  There is one other case that comes up with exporters, and
-that’s where the data is fundamentally tabular and doing otherwise would
-require users to do regexes on metric names to be usable. Consider the
-voltage sensors on your motherboard, while doing math across them is
-meaningless, it makes sense to have them in one metric rather than
-having one metric per sensor. All values within a metrics should
-(almost) always have the same unit, for example consider if fan speeds
-were mixed in with the voltages, and you had no way to automatically
-separate them.
+大まかなルールとして、1つのメトリックは、合計や平均した場合に意味を成すべきである。
+そうすべきでない場合が1つあり、それはexporterに関連がある。
+それはデータが本質的に表であるような場合であり、そうしなければユーザーがメトリクス名を正規表現で扱わなければならなくなるだろう。
+マザーボード上の複数の電圧センサーについて考えてみると、それらの合計や平均は意味がない一方で、センサーごとのメトリックを持つのではなく、1つのメトリックにまとめるのが理にかなっている。
+1つのメトリックの値は全て（ほぼ）必ず同じ単位であるべきである。例えば、ファンの速度が電圧と混ざっている場合を考えると、それらを自動的に分別する方法はない。
 
-Don’t do this:
-
+以下のようにしてはいけない。
 <pre>
 my_metric{label=a} 1
 my_metric{label=b} 6
 <b>my_metric{label=total} 7</b>
 </pre>
 
-or this:
-
+以下のようにしてもいけない。
 <pre>
 my_metric{label=a} 1
 my_metric{label=b} 6
 <b>my_metric{} 7</b>
 </pre>
 
-The former breaks for people who do a `sum()` over your metric, and the
-latter breaks sum and is quite difficult to work with. Some client
-libraries, for example Go, will actively try to stop you doing the
-latter in a custom collector, and all client libraries should stop you
-from doing the latter with direct instrumentation. Never do either of
-these, rely on Prometheus aggregation instead.
+前者は、このメトリックを`sum()`する人にとってうまくいかない。
+後者は、sumがうまくいかないし、扱いが難しい。
+いくつかのライブラリ（例えばGo）は、カスタムコレクターで後者のようなことをするのを積極的に止めようとする。
+また、全てのクライアントライブラリは、直接のメトリクス組み込みで後者をすることを止めるべきである。
+絶対に前者も後者もせずに、代わりにPrometheusの集約を利用すること。
 
-If your monitoring exposes a total like this, drop the total. If you
-have to keep it around for some reason, for example the total includes
-things not counted individually, use different metric names.
+自分の監視ツールがこのような出力をする場合、totalを落とすこと。
+もし、何らかの理由（例えば、個別のカウントに入ってないものがtotalに入っている）で、それを持ち続けなければならないなら、違うメトリック名を使うこと。
 
-Instrumentation labels should be minimal, every extra label is one more
-that users need to consider when writing their PromQL. Accordingly,
-avoid having instrumentation labels which could be removed without
-affecting the uniqueness of the time series. Additional information
-around a metric can be added via an info metric, for an example see
-below how to handle version numbers.
+メトリクスを組み込む際のラベルは、最小限にするべきである。
+ユーザーがクエリを書く際に、余分なラベルそれぞれが、考慮しなければいけないことを1つずつ増やすことになる。
+したがって、メトリクスを組み込む際に、消しても時系列の単一性を損なうことがないラベルは避けること。
+メトリックの補足情報はinfoメトリックを介して追加することができる。
+例えば、バージョン番号をどのように扱うかについて下記を参照すること。
 
-However, there are cases where it is expected that virtually all users of
-a metric will want the additional information. If so, adding a
-non-unique label, rather than an info metric, is the right solution. For
-example the
-[mysqld_exporter](https://github.com/prometheus/mysqld_exporter)'s
-`mysqld_perf_schema_events_statements_total`'s `digest` label is a hash
-of the full query pattern and is sufficient for uniqueness. However, it
-is of little use without the human readable `digest_text` label, which
-for long queries will contain only the start of the query pattern and is
-thus not unique. Thus we end up with both the `digest_text` label for
-humans and the `digest` label for uniqueness.
+ただし、あるメトリックの実質的に全てのユーザーが補足情報を求めていると予想される場合がある。
+そのような場合、infoメトリックではなく、非ユニークなラベルを追加するのが正解である。
+例えば、[mysqld_exporter](https://github.com/prometheus/mysqld_exporter)の`mysqld_perf_schema_events_statements_total`のラベル`digest`は、完全なクエリパターンのハッシュであり、ユニークさとして十分である。
+しかし、人間が可読なラベル`digest_text`がなければほとんど役に立たない。
+これは、長いクエリに対してはクエリパターンの最初だけしか含んでおらず、ユニークではない。
+したがって、結局は、人間のための`digest_text`と単一性のための`digest`の両方を持つことになる。
 
 ### Target labels, not static scraped labels
 
-If you ever find yourself wanting to apply the same label to all of your
-metrics, stop.
+もし、万が一、全てのメトリクスに同じラベルを適用したくなっても、やめること。
 
-There’s generally two cases where this comes up.
+一般的に、これが起きる場合が2つある。
 
-The first is for some label it would be useful to have on the metrics
-such as the version number of the software. Instead, use the approach
-described at
-[https://www.robustperception.io/how-to-have-labels-for-machine-roles/](http://www.robustperception.io/how-to-have-labels-for-machine-roles/).
+1つ目は、ソフトウェアのバージョン番号のような、メトリクスに付けておくと便利なラベルである。
+この場合、代わりに、[https://www.robustperception.io/how-to-have-labels-for-machine-roles/](http://www.robustperception.io/how-to-have-labels-for-machine-roles/)で説明されている方法を使うこと。
 
-The second case is when a label is really a target label. These are
-things like region, cluster names, and so on, that come from your
-infrastructure setup rather than the application itself. It’s not for an
-application to say where it fits in your label taxonomy, that’s for the
-person running the Prometheus server to configure and different people
-monitoring the same application may give it different names.
+2つ目は、ラベルが実はターゲットラベルである時である。
+リージョン、クラスタ名などのようなものは、アプリケーションではなく、インフラの構成から来るものである。
+ラベルの分類としてどの場所に当てはまるかを決めるのは、アプリケーションではない。
+それは、Prometheusサーバーを実行する人が設定することであり、同じアプリケーションを監視していても、人が異なれば、異なる名前を付けて良い。
 
-Accordingly, these labels belong up in the scrape configs of Prometheus
-via whatever service discovery you’re using. It’s okay to apply the
-concept of machine roles here as well, as it’s likely useful information
-for at least some people scraping it.
+したがって、これらのラベルは、利用している任意のサービスディスカバリーを経由して、Prometheusのスクレイプの設定に含まれる。
+少なくとも一部のスクレイプする人にとっては、マシンロールは有益な情報である可能性が高いので、この考え方をマシンロールにも適用して良い。
 
-### Types
+### 型
 
-You should try to match up the types of your metrics to Prometheus
-types. This usually means counters and gauges. The `_count` and `_sum`
-of summaries are also relatively common, and on occasion you’ll see
-quantiles. Histograms are rare, if you come across one remember that the
-exposition format exposes cumulative values.
+自分のメトリクスをPrometheusの型に合うようにする必要がある。
+これは、通常、カウンターとゲージである。
+サマリーの`_count`と`_sum`も比較的よくあり、たまに分位数も見かけるだろう。
+ヒストグラムは稀であり、もしヒストグラムに出会ったら、出力形式が累積的な値を出力していることを思い出そう。
 
-Often it won’t be obvious what the type of metric is, especially if
-you’re automatically processing a set of metrics. In general `UNTYPED`
-is a safe default.
+メトリクスの集合を自動的に処理するような場合は特に、メトリクスの型が明らかでないことがよくある。
+一般的に、`UNTYPED`が安全なデフォルトである。
 
-Counters can’t go down, so if you have a counter type coming from
-another instrumentation system that can be decremented, for example
-Dropwizard metrics then it's not a counter, it's a gauge. `UNTYPED` is
-probably the best type to use there, as `GAUGE` would be misleading if
-it were being used as a counter.
+カウンターは減少できないので、他のメトリクスを組み込むシステムから来るカウンター型がデクリメントされ得るのであれば、それはカウンターにしてはいけない。それはゲージである。
+`GAUGE`がカウンターとして利用されるのは誤解を招くであろうから、ここで使うには`UNTYPED`がおそらく最善の型である。
 
-### Help strings
+### ヘルプ文字列
 
-When you’re transforming metrics it’s useful for users to be able to
-track back to what the original was, and what rules were in play that
-caused that transformation. Putting in the name of the
-collector or exporter, the ID of any rule that was applied and the
-name and details of the original metric into the help string will greatly
-aid users.
+メトリクスを変換している場合、元が何だったか、どんなルールがその変換で動いたのかをユーザーが辿れるようになっていると便利である。
+collectorやexporterの名前と適用されたルールのID、元のメトリックの名前をヘルプ文字列に入れておくと、かなりユーザーが助かるだろう。
 
-Prometheus doesn’t like one metric having different help strings. If
-you’re making one metric from many others, choose one of them to put in
-the help string.
+Prometheusでは、1つのメトリックに異なる複数のヘルプ文字列があるのは好ましくない。
+多くのメトリクスから1つのメトリクスを作る場合、そのうちの1つを選んでヘルプ文字列の入れること。
 
-For examples of this, the SNMP exporter uses the OID and the JMX
-exporter puts in a sample mBean name. The [HAProxy
-exporter](https://github.com/prometheus/haproxy_exporter) has
-hand-written strings. The [node
-exporter](https://github.com/prometheus/node_exporter) also has a wide
-variety of examples.
+この例として、SNMP exporterはOIDを利用し、JMX exporterはサンプルのmBean名を入れている。
+[HAProxy exporter](https://github.com/prometheus/haproxy_exporter)には、手書きの文字列がある。
+[node exporter](https://github.com/prometheus/node_exporter)にも幅広い種類の例がある。
 
-### Drop less useful statistics
+### 有益でない情報の削除
 
-Some instrumentation systems expose 1m, 5m, 15m rates, average rates since
-application start (these are called `mean` in Dropwizard metrics for
-example) in addition to minimums, maximums and standard deviations.
+メトリクス組み込みの仕組みには、最小値、最大値、標準偏差に加えて、1m、5m、15mのレート、アプリケーションが起動してからの平均レート（Dropwizardでは、これらは`mean`と呼ばれる）を出力するものがある。
+。
 
-These should all be dropped, as they’re not very useful and add clutter.
-Prometheus can calculate rates itself, and usually more accurately as
-the averages exposed are usually exponentially decaying. You don’t know
-what time the min or max were calculated over, and the standard deviation
-is statistically useless and you can always expose sum of squares,
-`_sum` and `_count` if you ever need to calculate it.
+これらは、有益ではないし、情報が散らかるので、全て削除されるべきである。
+Prometheusは自分自身でレートを計算することができるし、普通は（出力された平均は指数関数的に陳腐化するので）より正確に計算できる。
+minやmaxがどの時間にわたって計算されたのか分からないし、標準偏差は統計的に利用できないし、もし計算する必要があるならいつでも二乗和、`_sum`、`_count`を出力することができる。
 
-Quantiles have related issues, you may choose to drop them or put them
-in a Summary.
+分位数にも同じような問題があり、それらを削除するのかサマリーに入れるのかを選ぶことができる。
 
-### Dotted strings
+### ドット区切り文字列
 
-Many monitoring systems don’t have labels, instead doing things like
-`my.class.path.mymetric.labelvalue1.labelvalue2.labelvalue3`.
+多くの監視システムには、ラベルがない。
+その代わり、`my.class.path.mymetric.labelvalue1.labelvalue2.labelvalue3`のようなことをする。
 
-The [Graphite](https://github.com/prometheus/graphite_exporter) and
-[StatsD](https://github.com/prometheus/statsd_exporter) exporters share
-a way of transforming these with a small configuration language. Other
-exporters should implement the same. The transformation is currently
-implemented only in Go, and would benefit from being factored out into a
-separate library.
+[Graphite exporter](https://github.com/prometheus/graphite_exporter)と[StatsD exporter](https://github.com/prometheus/statsd_exporter)は、小さな設定言語を用いてそれらを変換する方法を共有している。
+他のexporterも同じものを実装すべきである。
+変換は、現在、Goでのみ実装されており、別のライブラリに切り出すことで恩恵が得られるだろう。
 
 ## Collectors
 
-When implementing the collector for your exporter, you should never use
-the usual direct instrumentation approach and then update the metrics on
-each scrape.
+自分のexporterのためにcollectorを実装している場合、通常の直接のメトリクス組み込みの手法を使って
+スクレイプのたびにメトリクスを更新するべきではない。
 
-Rather create new metrics each time. In Go this is done with
-[MustNewConstMetric](https://godoc.org/github.com/prometheus/client_golang/prometheus#MustNewConstMetric)
-in your `Update()` method. For Python see
-[https://github.com/prometheus/client_python#custom-collectors](https://github.com/prometheus/client_python#custom-collectors)
-and for Java generate a `List<MetricFamilySamples>` in your collect
-method, see
-[StandardExports.java](https://github.com/prometheus/client_java/blob/master/simpleclient_hotspot/src/main/java/io/prometheus/client/hotspot/StandardExports.java)
-for an example.
+そうではなく、新しいメトリクスを毎回作成すること。
+これは、Goでは、`Update()`メソッドの中で[MustNewConstMetric](https://godoc.org/github.com/prometheus/client_golang/prometheus#MustNewConstMetric)を使うことでできる。
+Pythonについては[https://github.com/prometheus/client_python#custom-collectors](https://github.com/prometheus/client_python#custom-collectors)を参照すること。
+Javaについては、collectメソッドの中で`List<MetricFamilySamples>`を生成すること。
+サンプルについては、[StandardExports.java](https://github.com/prometheus/client_java/blob/master/simpleclient_hotspot/src/main/java/io/prometheus/client/hotspot/StandardExports.java)
+を参照すること。
 
-The reason for this is two-fold. Firstly, two scrapes could happen at
-the same time, and direct instrumentation uses what are effectively
-file-level global variables, so you’ll get race conditions. Secondly, if
-a label value disappears, it’ll still be exported.
+こうすることには二重の理由がある。まず第一に、2つのスクレイプが同時に起こり得て、直接のメトリクス組み込みは実質的にファイルレベルでグローバルな変数を使っているので、レースコンディションが起きる。
+第二に、ラベルの値が消滅しても出力はされ続ける。
 
-Instrumenting your exporter itself via direct instrumentation is fine,
-e.g. total bytes transferred or calls performed by the exporter across
-all scrapes.  For exporters such as the [blackbox
-exporter](https://github.com/prometheus/blackbox_exporter) and [SMNP
-exporter](https://github.com/prometheus/snmp_exporter), which aren’t
-tied to a single target, these should only be exposed on a vanilla
-`/metrics` call, not on a scrape of a particular target.
+exporter自体に直接メトリクスを組み込むのは問題がない。
+転送されたバイト合計や全てのスクレイプにまたがってexporterによって実行された呼び出し回数は、その例である。
+[blackbox exporter](https://github.com/prometheus/blackbox_exporter)や[SMNP exporter](https://github.com/prometheus/snmp_exporter)のような単一の監視対象に結びついていないexporterに対して、これらはいつも通りの`/metrics`の呼び出しでのみ出力するべきであり、特定の監視対象のスクレイプで出力すべきではない。
 
-### Metrics about the scrape itself
+### スクレイプ自体に関するメトリクス
 
-Sometimes you’d like to export metrics that are about the scrape, like
-how long it took or how many records you processed.
+スクレイプに関して、どれぐらい時間がかかったか、何個のレコードを処理したかのようなメトリクスを出力したい時がある。
 
-These should be exposed as gauges as they’re about an event, the scrape,
-and the metric name prefixed by the exporter name, for example
-`jmx_scrape_duration_seconds`. Usually the `_exporter` is excluded and
-if the exporter also makes sense to use as just a collector, then
-definitely exclude it.
+これらは、1つのイベント（スクレイプ）に関するものなのでゲージとして出力すべきである。
+その名前は、例えば`jmx_scrape_duration_seconds`のように、exporter名をプリフィックスにするべきである。
+`_exporter`は、通常は除外され、exporterが単にcollectorとして使うのも理にかなっているなら絶対に除外される。
 
-### Machine and process metrics
+### マシンとプロセスのメトリクス
 
-Many systems, for example Elasticsearch, expose machine metrics such a
-CPU, memory and filesystem information. As the [node
-exporter](https://github.com/prometheus/node_exporter) provides these in
-the Prometheus ecosystem, such metrics should be dropped.
+例えばElasticsearchのような多くのシステムは、CPUやメモリ、ファイルシステム情報のようなマシンのメトリクスも出力する。
+これらは、Prometheusエコシステムの中で、[node exporter](https://github.com/prometheus/node_exporter)が提供しているので、削除されるべきである。
 
-In the Java world, many instrumentation frameworks expose process-level
-and JVM-level stats such as CPU and GC. The Java client and JMX exporter
-already include these in the preferred form via
-[DefaultExports.java](https://github.com/prometheus/client_java/blob/master/simpleclient_hotspot/src/main/java/io/prometheus/client/hotspot/DefaultExports.java),
-so these should also be dropped.
+Javaの世界では、多くのメトリクス組み込みフレームワークが、CPUやGCのようなプロセスレベルとJVMレベルの情報を出力する。
+JavaクライアントとJMX exporterは既に、[DefaultExports.java](https://github.com/prometheus/client_java/blob/master/simpleclient_hotspot/src/main/java/io/prometheus/client/hotspot/DefaultExports.java)を通して好ましい形でこれらを含んでいるので、これらも削除するべきである。
 
-Similarly with other languages and frameworks.
+他の言語やフレームワークでも同様である。
 
-## Deployment
+## デプロイ
 
-Each exporter should monitor exactly one instance application,
-preferably sitting right beside it on the same machine. That means for
-every HAProxy you run, you run a `haproxy_exporter` process. For every
-machine with a Mesos worker, you run the [Mesos
-exporter](https://github.com/mesosphere/mesos_exporter) on it, and
-another one for the master, if a machine has both.
+各exporterは、出来れば同じマシン上でちょうど1つのインスタンスのアプリケーションを監視すべきである。
+つまり、運用しているHAProxyそれぞれに対して`haproxy_exporter`プロセスを実行することになる。
+Mesosワーカーがいる全てのマシンで[Mesos exporter](https://github.com/mesosphere/mesos_exporter)を実行し、もしあるマシンにマスターもいるならマスターのためにさらに1つ実行する。
 
-The theory behind this is that for direct instrumentation this is what
-you’d be doing, and we’re trying to get as close to that as we can in
-other layouts.  This means that all service discovery is done in
-Prometheus, not in exporters.  This also has the benefit that Prometheus
-has the target information it needs to allow users probe your service
-with the [blackbox
-exporter](https://github.com/prometheus/blackbox_exporter).
+これはメトリクスを直接埋め込む場合にしていることであり、他の構成でも出来るだけそれに近くしようというのが、こうする理屈である。
+つまり、全てのサービスディスカバリーは、exporterではなく、Prometheusの中で行われるということである。
+これには、ユーザーが[blackbox exporter](https://github.com/prometheus/blackbox_exporter)で自分のサービスを検査できるような監視対象の情報をPrometheusが持つという恩恵もある。
 
-There are two exceptions:
+これには2つの例外がある。
 
-The first is where running beside the application your monitoring is
-completely nonsensical. The SNMP, blackbox and IPMI exporters are the
-main examples of this. The IPMI and SNMP exporters as the devices are
-often black boxes that it’s impossible to run code on (though if you
-could run a node exporter on them instead that’d be better), and the
-blackbox exporter where you’re monitoring something like a DNS name,
-where there’s also nothing to run on. In this case, Prometheus should
-still do service discovery, and pass on the target to be scraped. See
-the blackbox and SNMP exporters for examples.
+1つ目は、アプリケーションの横で監視を動かすのが根本的に意味がない場合である。
+SNMPやblackbox、IPMIのexporterがこの主な例である。
+デバイスはその上でコードを実行できないブラックボックであることが多いので、IPMIやSNMPはこの例に当たる（ただし、node exporterをそのデバイスで動かせるなら、そうした方が良い）。
+コードを実行する場所がないDNS名のようなものの監視をするのでblackbox exporterもこの例に当たる。
+こういった場合でも、Prometheusがサービスディスカバリーをしてスクレイプする対象を渡すべきである。
+サンプルは、blackbox exporterとSNMPを参照すること。
 
-Note that it is only currently possible to write this type of exporter
-with the Go, Python and Java client libraries.
+この種のexporterを書くことができるのは、現在、GoやPython、Javaのクライアントライブだけであることに注意。
 
-The second exception is where you’re pulling some stats out of a random
-instance of a system and don’t care which one you’re talking to.
-Consider a set of MySQL replicas you wanted to run some business queries
-against the data to then export. Having an exporter that uses your usual
-load balancing approach to talk to one replica is the sanest approach.
+2つ目の例外は、システムのランダムなインスタンスから情報を取得しており、どのインスタンスと通信していても構わない場合である。
+MySQLレプリカの集合があり、そのデータに対してビジネスクエリを実行して出力したいと考えてみよう。
+1つのレプリカと通信するためにいつも使っているロードバランスの方法を使うexporterにするのが最も合理的な方法である。
 
-This doesn’t apply when you’re monitoring a system with master-election,
-in that case you should monitor each instance individually and deal with
-the "masterness" in Prometheus. This is as there isn’t always exactly
-one master, and changing what a target is underneath Prometheus’s feet
-will cause oddities.
+これは、マスター選出のあるシステムでは適用できない。
+その場合、それぞれのインスタンスを個別に監視し、Prometheusで「マスターであること」を判断すべきである。
+これは、必ずしもちょうど1つのマスターがある訳ではないからであり、Prometheusの足元でターゲットが何であるかを変更するとおかしなことが起きる。
 
-### Scheduling
+### スケジュール
 
-Metrics should only be pulled from the application when Prometheus
-scrapes them, exporters should not perform scrapes based on their own
-timers. That is, all scrapes should be synchronous.
+メトリクスは、Prometheusがスクレイプした時にだけアプリケーションからpullされるべきである。
+exporterは、自分のタイマーに基づいてスクレイプをするべきではない。
+つまり、全てのスクレイプは同期的であるべきである。
 
-Accordingly, you should not set timestamps on the metrics you expose, let
-Prometheus take care of that. If you think you need timestamps, then you
-probably need the
-[Pushgateway](https://prometheus.io/docs/instrumenting/pushing/)
-instead.
+したがって、出力するメトリクスにタイムスタンプをセットすべきではない。Prometheusがその面倒を見るべきである。
+もし、タイムスタンプが必要と考えているなら、おそらく、代わりに[Pushgateway](https://prometheus.io/docs/instrumenting/pushing/)が必要である。
 
-If a metric is particularly expensive to retrieve, i.e. takes more than
-a minute, it is acceptable to cache it. This should be noted in the
-`HELP` string.
+もし、あるメトリクスの取得のコストが特に高い（例えば1分以上かかる）のであれば、それをキャッシュすることが容認される。
+このことは、`HELP`で記載されるべきである。
 
-The default scrape timeout for Prometheus is 10 seconds. If your
-exporter can be expected to exceed this, you should explicitly call this
-out in your user documentation.
+Prometheusがスクレイプをタイムアウトさせるのは、デフォルトで10秒である。
+自分のexporterがこれを超えそうなら、ユーザードキュメントでこのことを呼びかけるべきである。
 
-### Pushes
+### プッシュ
 
-Some applications and monitoring systems only push metrics, for example
-StatsD, Graphite and collectd.
+アプリケーションや監視システムの中には、例えばStatsD、Graphite、collectdのように、メトリクスをプッシュするだけのものもある。
 
-There are two considerations here.
+ここで考慮すべきことが2つある。
 
-Firstly, when do you expire metrics? Collectd and things talking to
-Graphite both export regularly, and when they stop we want to stop
-exposing the metrics.  Collectd includes an expiry time so we use that,
-Graphite doesn’t so it is a flag on the exporter.
+第一に、メトリクスをいつまで有効とするか？
+collectdおよびGraphiteと通信するものはどちらも定期的に出力をする。
+それらが止まった時は、そのメトリクスの出力を止めたい。
+collectdには有効期限が含まれているので、それを使う。
+Graphiteはそうではないので、exporterのフラグになっている。
 
-StatsD is a bit different, as it is dealing with events rather than
-metrics. The best model is to run one exporter beside each application
-and restart them when the application restarts so that the state is
-cleared.
+StatsDは、メトリクスではなくイベントを扱うものなので、少し違っている。
+それぞれのアプリケーションの横で1つのexporterを起動し、アプリケーションが再起動するときに状態が綺麗になるようにexporterを再起動するのが最善の方法である。
 
-Secondly, these sort of systems tend to allow your users to send either
-deltas or raw counters. You should rely on the raw counters as far as
-possible, as that’s the general Prometheus model.
+第二に、この種のシステムでは、ユーザーが差分でも生のカウンターでも送信できる傾向にある。
+生のカウンターがPrometheusの一般的なモデルなので、できる限り生のカウンターを使うべきである。
 
-For service-level metrics, e.g. service-level batch jobs, you should
-have your exporter push into the Pushgateway and exit after the event
-rather than handling the state yourself. For instance-level batch
-metrics, there is no clear pattern yet. The options are either to abuse
-the node exporter’s textfile collector, rely on in-memory state
-(probably best if you don’t need to persist over a reboot) or implement
-similar functionality to the textfile collector.
+サービスレベルのメトリクス（例えばサービスレベルのバッチジョブ）では、状態を自分で管理するのではなく、exporterにPushgatewayへプッシュをさせ、イベントの後は終了させるべきである。
+インスタンスレベルのバッチメトリクスでは、明らかなパターンはまだない。
+選択肢としては、node exporterのtextfile collectorを乱用するか、メモリ内の状態に頼る（リブート後に状態を保持する必要がなければおそらく最善）か、textfile collectorに似た機能を実装するかのいずれかである。
 
-### Failed scrapes
+### 失敗したスクレイプ
 
-There are currently two patterns for failed scrapes where the
-application you’re talking to doesn’t respond or has other problems.
+通信しているアプリケーションが反応しなかったり他の問題がある場合のスクレイプの失敗するときのために、現状で2つのパターンがある。
 
-The first is to return a 5xx error.
+1つ目は、5xxエラーを返すことである。
 
-The second is to have a `myexporter_up`, e.g. `haproxy_up`, variable
-that has a value of 0 or 1 depending on whether the scrape worked.
+2つ目は、スクレイプが機能しているかどうかをもとに0または1の値になる変数`myexporter_up`（例えば`haproxy_up`）を持つことである。
 
-The latter is better where there’s still some useful metrics you can get
-even with a failed scrape, such as the HAProxy exporter providing
-process stats. The former is a tad easier for users to deal with, as
-`up` works in the usual way, although you can’t distinguish between the
-exporter being down and the application being down.
+スクレイプが失敗してもまだ有益なメトリクスが取得できる場合には、後者の方が良い。
+例えば、HAProxy exporterはプロセスの情報を提供する。
+後者は、`up`が通常の動作をするので多少使いやすい。
+ただし、exporterがダウンしているのかアプリケーションがダウンしているか区別することはできない。
 
-### Landing page
+### ランディングページ
 
-It’s nicer for users if visiting `http://yourexporter/` has a simple
-HTML page with the name of the exporter, and a link to the `/metrics`
-page.
+`http://yourexporter/`を見ると簡単なHTMLでexporterの名前と`/metrics`ページへのリンクがあるとユーザーにとって親切である。
 
-### Port numbers
+### ポート番号
 
-A user may have many exporters and Prometheus components on the same
-machine, so to make that easier each has a unique port number.
+ユーザーは、同じマシンにたくさんのexporterとPrometheusコンポーネントを持っているかもしれない。
+したがって、それぞれにユニークなポート番号を持たせるのが簡単であるようにすること。
 
-[https://github.com/prometheus/prometheus/wiki/Default-port-allocations](https://github.com/prometheus/prometheus/wiki/Default-port-allocations)
-is where we track them, this is publicly editable.
+[https://github.com/prometheus/prometheus/wiki/Default-port-allocations](https://github.com/prometheus/prometheus/wiki/Default-port-allocations)がポート番号が記録されるところになっていて、誰でも編集できる。
 
-Feel free to grab the next free port number when developing your
-exporter, preferably before publicly announcing it. If you’re not ready
-to release yet, putting your username and WIP is fine.
+exporterを開発しているときは、次のポート番号を、できれば公衆にアナウンスする前に、とって構わない。
+まだリリースの準備ができていないなら、ユーザー名とWIPを書くので構わない。
 
-This is a registry to make our users’ lives a little easier, not a
-commitment to develop particular exporters. For exporters for internal
-applications we recommend using ports outside of the range of default
-port allocations.
+これはPrometheusユーザーの暮らしを少し良くするための登録であり、特定のexporterを開発するという公約ではない。
+内部的なアプリケーションのためのexporterには、デフォルトのポート割り当て範囲外のポートを利用することを推奨する。
 
-## Announcing
+## アナウンス
 
-Once you’re ready to announce your exporter to the world, email the
-mailing list and send a PR to add it to [the list of available
-exporters](https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exporters.md).
+自分のexporterを世界にアナウンスする準備が出来たなら、メーリングリストにメールして、[利用可能なexporter一覧](https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exporters.md)に追加するためにPRを送ること。

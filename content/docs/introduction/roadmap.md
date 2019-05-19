@@ -1,44 +1,37 @@
 ---
-title: Roadmap
+title: ロードマップ
 sort_rank: 6
 ---
 
-# Roadmap
+# ロードマップ
 
-The following is only a selection of some of the major features we plan to
-implement in the near future. To get a more complete overview of planned
-features and current work, see the issue trackers for the various repositories,
-for example, the [Prometheus
-server](https://github.com/prometheus/prometheus/issues).
+以下に記すのは、近い将来に実装する予定の主な機能からいくつかを選んだものである。
+予定されている機能および現在の取り組みの完全な概要は、各種リポジトリのイシュートラッカー（例えば、[Prometheusサーバー](https://github.com/prometheus/prometheus/issues)）を参照すること。
 
-### Server-side metric metadata support
 
-At this time, metric types and other metadata are only used in the
-client libraries and in the exposition format, but not persisted or
-utilized in the Prometheus server. We plan on making use of this
-metadata in the future. The first step is to aggregate this data in-memory
-in Prometheus and provide it via an experimental API endpoint.
+### サーバーサイドでのメトリックメタデータのサポート
 
-### Adopt OpenMetrics
+現在、メトリックの型および他のメタデータは、クライアントライブラリと出力フォーマットで用いられているだけで、Prometheusサーバーで保持されたり利用されたりしていない。
+将来は、このデータを利用する予定である。
+まずは、このデータをPrometheusのメモリ内に集め、実験的なAPIエンドポイントを通して提供する。
 
-The OpenMetrics working group is developing a new standard for metric exposition.
-We plan to support this format in our client libraries and Prometheus itself.
+### OpenMetricsの採用
 
-### Backfill time series
+OpenMetricsワーキンググループは、メトリックの出力に関して新しい標準を作成中である。
+このフォーマットをクライアントライブラリとPrometheus自体でサポートする予定である。
 
-Backfilling will permit bulk loads of data in the past. This will allow for
-retroactive rule evaluations, and transferring old data from other monitoring
-systems.
+### 時系列の埋め直し（backfill）
 
-### TLS and authentication in HTTP serving endpoints
+backfillは、過去データをまとめて読み込めるようにする。
+これで、過去に遡ってルールを評価したり、他のシステムから古いデータを転送することができるようになる。
 
-The HTTP serving endpoints in Prometheus, Alertmanager, and the official exporters
-do not have built-in support for TLS and authentication yet. Adding this support
-will make it easier for people to deploy Prometheus components securely without
-requiring a reverse proxy to add those features externally.
+### HTTPエンドポイントでのTLSと認証
 
-### Support the Ecosystem
+Prometheus、Alertmanager、公式exporterのHTTPエンドポイントには、TLSと認証の組み込みでのサポートがまだない。
+これをサポートすることで、外からこの機能を付け足すためのリバースプロキシが必要なくなり、ユーザーがPrometheusのコンポーネントをデプロイすることが簡単になる。
 
-Prometheus has a range of client libraries and exporters. There are always more
-languages that could be supported, or systems that would be useful to export
-metrics from. We will support the ecosystem in creating and expanding these.
+### エコシステムのサポート
+
+Prometheusには、幅広いクライアントライブラリとexporterがあるが、
+サポートし得る言語、メトリクスを出力すると便利なシステムがまだまだある。
+これらの作成、発展においてエコシステムを支援する。

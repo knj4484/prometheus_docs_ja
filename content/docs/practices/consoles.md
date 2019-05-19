@@ -1,39 +1,29 @@
 ---
-title: Consoles and dashboards
+title: コンソールとダッシュボード
 sort_rank: 3
 ---
 
-# Consoles and dashboards
+# コンソールとダッシュボード
 
-It can be tempting to display as much data as possible on a dashboard, especially
-when a system like Prometheus offers the ability to have such rich
-instrumentation of your applications. This can lead to consoles that are
-impenetrable due to having too much information, that even an expert in the
-system would have difficulty drawing meaning from.
+あるシステムがPrometheusのように豊富なメトリクスを持つことができる場合、出来るだけ多くのデータを表示したくなってしまうかもしれない。
+こうしたことから、そのシステムの専門家でさえも意味を理解するのが難しいような、情報を多く盛り込み過ぎて見通しの悪いコンソールに至ってしまうかもしれない。
 
-Instead of trying to represent every piece of data you have, for operational
-consoles think of what are the most likely failure modes and how you would use the
-consoles to differentiate them. Take advantage of the structure of your
-services. For example, if you have a big tree of services in an online-serving
-system, latency in some lower service is a typical problem. Rather than showing
-every service's information on a single large dashboard, build separate dashboards
-for each service that include the latency and errors for each service they talk
-to. You can then start at the top and work your way down to the problematic
-service.
+自分の持っているデータを全てを表示しようとするのではなく、一番よくありそうなエラーの状態は何か、そのような状態を区別するためにどのようにコンソールを使うであろうかについて考えること。
+サービスの構造を活かすこと。
+例えば、もし、オンラインサービスが大きな木構造になっているなら、下位レイヤーのサービスのレイテンシーが典型的な問題となる。
+全てのサービスの情報を単一の大きなダッシュボードに表示するのではなく、サービスごとにそれぞれが通信するサービスのレイテンシーとエラーを含むようなダッシュボードを作ること。
+そうすることで、上位レイヤーから始めて、問題のサービスにたどり着けるようになる。
 
-We have found the following guidelines very effective:
+以下のガイドラインが非常に有効であることが分かっている。
 
-* Have no more than 5 graphs on a console.
-* Have no more than 5 plots (lines) on each graph. You can get away with more if it is a stacked/area graph.
-* When using the provided console template examples, avoid more than 20-30 entries in the right-hand-side table.
+* 1個のコンソールにはグラフは5個までにする
+* 各グラフにはプロットは5個まで。stacked/areaグラフであれば、これより多くても許される
+* 提供されているコンソールテンプレートの例を使う場合、右側の表では20-30より多いエントリーは避ける
 
-If you find yourself exceeding these, it could make sense to demote the visibility of
-less important information, possibly splitting out some subsystems to a new console.
-For example, you could graph aggregated rather than broken-down data, move
-it to the right-hand-side table, or even remove data completely if it is rarely
-useful - you can always look at it in the [expression browser](/docs/visualization/browser/)!
+もし、これらのガイドラインを超えているなら、（おそらくはサブシステムを新しいコンソールに分割するなどして）重要性の低い情報を見えなくするのが合理的である。
+例えば、個別のデータではなく、集約されたデータをグラフ化したり、右側の表に写したり、もし稀にしか使わないデータであれば取り除いてしまう。
+それは、いつだって[expressionブラウザ](/docs/visualization/browser/)で見ることができる。
 
-Finally, it is difficult for a set of consoles to serve more than one master.
-What you want to know when oncall (what is broken?) tends to be very different
-from what you want when developing features (how many people hit corner
-case X?). In such cases, two separate sets of consoles can be useful.
+最後に、ある1つのコンソールの集合で複数のユーザーを満足させるのは、難しい。
+oncallのときに必要な情報(何が壊れているか）は、機能を開発しているときに必要な情報（あるコーナーケースに遭遇する人は何人か）は、全然違う傾向にある。
+そういう場合には、二つの別々のコンソールにすると便利である。

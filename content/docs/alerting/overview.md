@@ -1,18 +1,15 @@
 ---
-title: Alerting overview
+title: アラート概要
 sort_rank: 1
 nav_icon: sliders
 ---
 
-# Alerting Overview
+# アラート概要
 
-Alerting with Prometheus is separated into two parts. Alerting rules in
-Prometheus servers send alerts to an Alertmanager. The [Alertmanager](../alertmanager)
-then manages those alerts, including silencing, inhibition, aggregation and
-sending out notifications via methods such as email, PagerDuty and HipChat.
+Prometheusのアラートは、二つの部分に分けられている。 Prometheusサーバーのアラートルールは、Alertmanagerにアラートを送る。 [Alertmanager](../alertmanager)は、アラートを一時停止したり、アラートの依存関係を元に通知を抑制したり、集約したり、eメールやPagerDuty、HipChatなどの方法での通知の送信などを含むそれらアラートの管理を行う。
 
-The main steps to setting up alerting and notifications are:
+アラートと通知をセットアップする主なステップは以下の通り。
 
-* Setup and [configure](../configuration) the Alertmanager
-* [Configure Prometheus](../../prometheus/latest/configuration/configuration/#<alertmanager_config>) to talk to the Alertmanager
-* Create [alerting rules](../../prometheus/latest/configuration/alerting_rules/) in Prometheus
+* Alertmanagerのセットアップと[設定](../configuration)をする
+* Alertmanagerと通信するように[Prometheusを設定](../../prometheus/latest/configuration/configuration/#<alertmanager_config>)する
+* Prometheusの[アラートルール](../../prometheus/latest/configuration/alerting_rules/)を作成する

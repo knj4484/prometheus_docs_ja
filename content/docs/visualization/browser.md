@@ -1,12 +1,10 @@
 ---
-title: Expression browser
+title: expressionブラウザ
 sort_rank: 1
 ---
 
-# Expression browser
+# expressionブラウザ
 
-The expression browser is available at `/graph` on the Prometheus server, allowing you
-to enter any expression and see its result either in a table or graphed over time.
+Prometheusサーバー上の`/graph`でexpressionブラウザが利用可能で、任意の式を入力し、表または時間軸でグラフ化して結果を見ることが出来る。
 
-This is primarily useful for ad-hoc queries and debugging. For graphs, use
-[Grafana](/docs/visualization/grafana/) or [Console templates](/docs/visualization/consoles/).
+これは、主に、アドホックなクエリやデバッグに便利である。グラフ化には、[Grafana](/docs/visualization/grafana/)や[コンソールテンプレート](/docs/visualization/consoles/)を使う。

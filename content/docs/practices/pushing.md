@@ -1,57 +1,34 @@
 ---
-title: When to use the Pushgateway
+title: いつPushgatewayを使うべきか
 sort_rank: 7
 ---
 
-# When to use the Pushgateway
+# いつPushgatewayを使うべきか
 
-The Pushgateway is an intermediary service which allows you to push metrics
-from jobs which cannot be scraped. For details, see [Pushing metrics](/docs/instrumenting/pushing/).
+Pushgatewayは、スクレイプすることができないジョブからメトリクスをプッシュできるようにするための中間的なサービスである。
+詳細は、[メトリクスのプッシュ](/docs/instrumenting/pushing/)を参照。
 
-## Should I be using the Pushgateway?
+## Pushgatewayを使うべきか？
 
-**We only recommend using the Pushgateway in certain limited cases.** There are
-several pitfalls when blindly using the Pushgateway instead of Prometheus's
-usual pull model for general metrics collection:
+**特定の限られた場合にのみPushgatewayを利用することを推奨する。**
+一般的なメトリクスの収集に、Prometheusの通常のpullモデルの代わりにPushgatewayを盲目的に使うと落とし穴にはまることがある。
 
-* When monitoring multiple instances through a single Pushgateway, the
-  Pushgateway becomes both a single point of failure and a potential
-  bottleneck.
-* You lose Prometheus's automatic instance health monitoring via the `up`
-  metric (generated on every scrape).
-* The Pushgateway never forgets series pushed to it and will expose them to
-  Prometheus forever unless those series are manually deleted via the
-  Pushgateway's API.
+* 複数のインスタンスを一つのPushgatewayを通して監視すると、Pushgatewayが単一障害点になり、ボトルネックとなる可能性もある
+* scrapeする毎に生成される`up`メトリックによるインスタンスのヘルスチェックができなくなる
+* Pushgatewayは、（Pushgateway APIを使って手動で削除しない限り）送られてきたデータを失うことがなくデータを出力し続ける
 
-The latter point is especially relevant when multiple instances of a job
-differentiate their metrics in the Pushgateway via an `instance` label or
-similar. Metrics for an instance will then remain in the Pushgateway even if
-the originating instance is renamed or removed. This is because the lifecycle
-of the Pushgateway as a metrics cache is fundamentally separate from the
-lifecycle of the processes that push metrics to it. Contrast this to
-Prometheus's usual pull-style monitoring: when an instance disappears
-(intentional or not), its metrics will automatically disappear along with it.
-When using the Pushgateway, this is not the case, and you would now have to
-delete any stale metrics manually or automate this lifecycle synchronization
-yourself.
+最後の点は、あるジョブの複数のインスタンスが、`instance`ラベル（または類似のもの）を使ってPushgatewayにあるメトリクスを区別する場合には重要である。
+あるインスタンスのメトリクスは、インスタンスが名前変更や削除されても保持されたままになる。したがって、メトリクスのキャッシュとしてのPushgatewayのライフサイクルは、メトリクスをpushしてくるプロセスのライフサイクルと本質的に分離されているからである。
+Prometheusの通常のpullスタイルの監視と比較してみると、インスタンスが消えたときに（意図的であるかどうかに関わらず）、そのメトリクスも同時に自動的に消える。
+Pushgatewayを使うと、こうはならないので、古くなったメトリクスは手動で消すか、ライフサイクル同期を自分で自動化しなければならないだろう。
 
-**Usually, the only valid use case for the Pushgateway is for capturing the
-outcome of a service-level batch job**.  A "service-level" batch job is one
-which is not semantically related to a specific machine or job instance (for
-example, a batch job that deletes a number of users for an entire service).
-Such a job's metrics should not include a machine or instance label to decouple
-the lifecycle of specific machines or instances from the pushed metrics. This
-decreases the burden for managing stale metrics in the Pushgateway. See also
-the [best practices for monitoring batch jobs](/docs/practices/instrumentation/#batch-jobs).
+**Pushgatewayの唯一の正当な利用方法は、サービスレベルのバッチの出力を追跡することである。**「サービスレベル」のバッチとは、特定のマシンやジョブインスタンスに意味的に結びついていないもののこと（例えば、サービス全体の多くのユーザーを削除するバッチ）である。そのようなジョブのメトリクスは、メトリクスから特定のマシンやインスタンスのライフサイクルを分離するために、マシンやインスタンスのラベルを含むべきではない。こうすることで、Pushgatewayにある古くなったメトリクスを管理する負荷を減らすことが出来る。
+[バッチジョブ監視のベストプラクティス](/docs/practices/instrumentation/#batch-jobs)も参照すること。
 
-## Alternative strategies
+## 代替手段
 
-If an inbound firewall or NAT is preventing you from pulling metrics from
-targets, consider moving the Prometheus server behind the network barrier as
-well. We generally recommend running Prometheus servers on the same network as
-the monitored instances.
+もしファイアウォールやNATが監視対象からのpullを妨げているなら、Prometheusサーバーのファイアウォール内への移動を考えること。
+Prometheusのサーバーを監視対象と同じネットワークで稼働させることが一般的に推奨されている。
 
-For batch jobs that are related to a machine (such as automatic
-security update cronjobs or configuration management client runs), expose the
-resulting metrics using the [Node Exporter's](https://github.com/prometheus/node_exporter)
-textfile module instead of the Pushgateway.
+マシンに紐づいたバッチジョブ（自動セキュリティ更新のためのcronジョブや設定管理クライアントの実行）のためには、Node Exporterの
+[Textfile Collector](https://github.com/prometheus/node_exporter#textfile-collector)を用いて、結果のメトリクスを出力すること。

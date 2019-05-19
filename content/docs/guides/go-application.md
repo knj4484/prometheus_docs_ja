@@ -1,16 +1,17 @@
 ---
-title: Instrumenting a Go application
+title: Goアプリケーションへのメトリクス組み込み
 ---
 
-# Instrumenting a Go application for Prometheus
+# PrometheusのためのGoアプリケーションへのメトリクス組み込み
 
-Prometheus has an official [Go client library](https://github.com/prometheus/client_golang) that you can use to instrument Go applications. In this guide, we'll create a simple Go application that exposes Prometheus metrics via HTTP.
+Prometheusには、Goアプリケーションにメトリクスを組み込むために利用可能な公式[Goクライアントライブラリ](https://github.com/prometheus/client_golang)がある。
+このガイドでは、HTTPでPrometheusメトリクスを出力する簡単なGoアプリケーションを作成する。
 
-NOTE: For comprehensive API documentation, see the [GoDoc](https://godoc.org/github.com/prometheus/client_golang) for Prometheus' various Go libraries.
+NOTE: 網羅的なAPIドキュメントは、Prometheusの各種Goライブラリの[GoDoc](https://godoc.org/github.com/prometheus/client_golang)を参照すること。
 
-## Installation
+## インストール
 
-You can install the `prometheus`, `promauto`, and `promhttp` libraries necessary for the guide using [`go get`](https://golang.org/doc/articles/go_command.html):
+このガイドで必要なライブラリ`prometheus`、`promauto`、`promhttp`を、[`go get`](https://golang.org/doc/articles/go_command.html)を利用して、インストールすることができる。
 
 ```bash
 go get github.com/prometheus/client_golang/prometheus
@@ -20,9 +21,10 @@ go get github.com/prometheus/client_golang/prometheus/promhttp
 
 ## How Go exposition works
 
-To expose Prometheus metrics in a Go application, you need to provide a `/metrics` HTTP endpoint. You can use the [`prometheus/promhttp`](https://godoc.org/github.com/prometheus/client_golang/prometheus/promhttp) library's HTTP [`Handler`](https://godoc.org/github.com/prometheus/client_golang/prometheus/promhttp#Handler) as the handler function.
+GoアプリケーションでPrometheusメトリクスを出力するには、HTTPエンドポイント`/metrics`を提供する必要がある。
+ハンドラー関数として、ライブラリ[`prometheus/promhttp`](https://godoc.org/github.com/prometheus/client_golang/prometheus/promhttp)のHTTP [`Handler`](https://godoc.org/github.com/prometheus/client_golang/prometheus/promhttp#Handler)を利用できる。
 
-This minimal application, for example, would expose the default metrics for Go applications via `http://localhost:2112/metrics`:
+例えば、この最小限のアプリケーションは、Goアプリケーションのデフォルトのメトリクスを`http://localhost:2112/metrics`で出力する。
 
 ```go
 package main
@@ -39,21 +41,24 @@ func main() {
 }
 ```
 
-To start the application:
+このアプリケーションを起動するには、以下のコマンドを実行する。
 
 ```bash
 go run main.go
 ```
 
-To access the metrics:
+メトリクスにアクセスするには以下のコマンドを実行する。
 
 ```bash
 curl http://localhost:2112/metrics
 ```
 
-## Adding your own metrics
+## 独自メトリクスの追加
 
-The application [above](#how-go-exposition-works) exposes only the default Go metrics. You can also register your own custom application-specific metrics. This example application exposes a `myapp_processed_ops_total` [counter](/docs/concepts/metric_types/#counter) that counts the number of operations that have been processed thus far. Every 2 seconds, the counter is incremented by one.
+上記のアプリケーションは、デフォルトのGoメトリクスのみを出力する。
+独自のアプリケーション固有のメトリクスを登録することもできる。
+この例では、その時点までに処理された操作数を数える[カウンター](/docs/concepts/metric_types/#counter)`myapp_processed_ops_total`を出力する。
+このカウンターは、2秒ごとに1ずつ増加する。
 
 ```go
 package main
@@ -91,19 +96,19 @@ func main() {
 }
 ```
 
-To run the application:
+このアプリケーションを起動するには、以下のコマンドを実行する。
 
 ```bash
 go run main.go
 ```
 
-To access the metrics:
+メトリクスにアクセスするには以下のコマンドを実行する。
 
 ```bash
 curl http://localhost:2112/metrics
 ```
 
-In the metrics output, you'll see the help text, type information, and current value of the `myapp_processed_ops_total` counter:
+メトリクスの出力の中で、ヘルプテキスト、型情報、カウンター`myapp_processed_ops_total`の現在の値を見ることができるだろう。
 
 ```
 # HELP myapp_processed_ops_total The total number of processed events
@@ -111,7 +116,8 @@ In the metrics output, you'll see the help text, type information, and current v
 myapp_processed_ops_total 5
 ```
 
-You can [configure](/docs/prometheus/latest/configuration/configuration/#<scrape_config>) a locally running Prometheus instance to scrape metrics from the application. Here's an example `prometheus.yml` configuration:
+ローカルで稼働しているPrometheusインスタンスがこのアプリケーションからメトリクスを取得するように[設定](/docs/prometheus/latest/configuration/configuration/#<scrape_config>)できる。
+`prometheus.yml`の設定例は以下の通り。
 
 ```yaml
 scrape_configs:
@@ -122,10 +128,11 @@ scrape_configs:
     - localhost:2112
 ```
 
-## Other Go client features
+## その他のGoクライアントの機能
 
-In this guide we covered just a small handful of features available in the Prometheus Go client libraries. You can also expose other metrics types, such as [gauges](https://godoc.org/github.com/prometheus/client_golang/prometheus#Gauge) and [histograms](https://godoc.org/github.com/prometheus/client_golang/prometheus#Histogram), [non-global registries](https://godoc.org/github.com/prometheus/client_golang/prometheus#Registry), functions for [pushing metrics](https://godoc.org/github.com/prometheus/client_golang/prometheus/push) to Prometheus [PushGateways](/docs/instrumenting/pushing/), bridging Prometheus and [Graphite](https://godoc.org/github.com/prometheus/client_golang/prometheus/graphite), and more.
+このガイドでは、PrometheusのGoクライアントライブラリで利用可能なほんの一握りの機能に触れただけである。
+[ゲージ](https://godoc.org/github.com/prometheus/client_golang/prometheus#Gauge)や[ヒストグラム](https://godoc.org/github.com/prometheus/client_golang/prometheus#Histogram)のような他の型のメトリクスを出力することもできるし、[グローバルでないレジストリ](https://godoc.org/github.com/prometheus/client_golang/prometheus#Registry)、[Pushgateway](/docs/instrumenting/pushing/)に[メトリクスをプッシュする](https://godoc.org/github.com/prometheus/client_golang/prometheus/push)関数、Prometheusと[Graphite](https://godoc.org/github.com/prometheus/client_golang/prometheus/graphite)の連携などもある。
 
-## Summary
+## まとめ
 
-In this guide, you created two sample Go applications that expose metrics to Prometheus---one that exposes only the default Go metrics and one that also exposes a custom Prometheus counter---and configured a Prometheus instance to scrape metrics from those applications.
+このガイドでは、Prometheusにメトリクスを出力する2つのGoアプリケーションのサンプル（デフォルトのGoメトリクスだけを出力するものと独自のPrometheusカウンターも出力するもの）を作成し、Prometheusインスタンスがそれらのアプリケーションからメトリクスを取得するように設定した。

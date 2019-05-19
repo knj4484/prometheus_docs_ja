@@ -1,37 +1,24 @@
 ---
-title: Integrations
+title: インテグレーション
 sort_rank: 5
 ---
 
-# Integrations
+# インテグレーション
 
-In addition to [client libraries](/docs/instrumenting/clientlibs/) and
-[exporters and related libraries](/docs/instrumenting/exporters/), there are
-numerous other generic integration points in Prometheus. This page lists some
-of the integrations with these.
+[クライアントライブラリ](/docs/instrumenting/clientlibs/)、[エクスポーターおよび関連ライブラリ](/docs/instrumenting/exporters/)に加えて、Prometheusには一般的な連携ポイントが多くある。 このページでは、それらとのインテグレーションのうちいくつかを記載する。
 
+機能が重なっていたり、開発中のものもあるので、全てのインテグレーションがここに記載されているわけではない。 [exporterデフォルトポート](https://github.com/prometheus/prometheus/wiki/Default-port-allocations)Wikiもこの種のexporter以外のインテグレーションのいくつかを含んでいる。
 
-Not all integrations are listed here, due to overlapping functionality or still
-being in development. The [exporter default
-port](https://github.com/prometheus/prometheus/wiki/Default-port-allocations)
-wiki page also happens to include a few non-exporter integrations that fit in
-these categories.
+## ファイルサービスディスカバリー
 
-## File Service Discovery
-
-For service discovery mechanisms not natively supported by Prometheus,
-[file-based service discovery](/docs/operating/configuration/#%3Cfile_sd_config%3E) provides an interface for integrating.
+Prometheusがサポートしていないサービスディスカバリーの仕組みに対しては、[ファイルベースのサービスディスカバリー](/docs/operating/configuration/#%3Cfile_sd_config%3E)が連携のインターフェースを提供している。
 
  * [Docker Swarm](https://github.com/ContainerSolutions/prometheus-swarm-discovery)
  * [Scaleway](https://github.com/scaleway/prometheus-scw-sd)
 
 ## Remote Endpoints and Storage
 
-The [remote write](/docs/operating/configuration/#%3Cremote_write%3E) and [remote read](/docs/operating/configuration/#%3Cremote_read%3E)
-features of Prometheus allow transparently sending and receiving samples. This
-is primarily intended for long term storage. It is recommended that you perform
-careful evaluation of any solution in this space to confirm it can handle your
-data volumes.
+Prometheusの[remote write](/docs/operating/configuration/#%3Cremote_write%3E)と[remote read](/docs/operating/configuration/#%3Cremote_read%3E)の機能によって、値を透過的に送信・受信することができる。 これは、長期ストレージを主な目的としている。 ここに挙げられたソリューションが自分のデータ量を捌けるかを慎重に評価することをお勧めする。
 
   * [AppOptics](https://github.com/solarwinds/prometheus2appoptics): write
   * [Chronix](https://github.com/ChronixDB/chronix.ingester): write
@@ -54,30 +41,28 @@ data volumes.
 
 ## Alertmanager Webhook Receiver
 
-For notification mechanisms not natively supported by the Alertmanager, the
-[webhook receiver](/docs/alerting/configuration/#webhook_config) allows for integration.
+Alertmanagerがサポートしていない通知の仕組みに対しては、[webhook receiver](/docs/alerting/configuration/#webhook_config)によって連携することができる。
 
   * [AWS SNS](https://github.com/DataReply/alertmanager-sns-forwarder)
   * [DingTalk](https://github.com/timonwong/prometheus-webhook-dingtalk)
   * [IRC Bot](https://github.com/multimfi/bot)
   * [JIRAlert](https://github.com/free/jiralert)
   * [Phabricator / Maniphest](https://github.com/knyar/phalerts)
-  * [prom2teams](https://github.com/idealista/prom2teams): forwards notifications to Microsoft Teams
+  * [prom2teams](https://github.com/idealista/prom2teams): Microsoft Teamsに通知を転送する
   * [SMS](https://github.com/messagebird/sachet): supports [multiple providers](https://github.com/messagebird/sachet/blob/master/examples/config.yaml)
   * [SNMP traps](https://github.com/maxwo/snmp_notifier)
   * [Telegram bot](https://github.com/inCaller/prometheus_bot)
   * [XMPP Bot](https://github.com/jelmer/prometheus-xmpp-alerts)
 
-## Management
+## 設定管理
 
-Prometheus does not include configuration management functionality, allowing
-you to integrate it with your existing systems or build on top of it.
+Prometheusには、既存システムと連携できるようにしたり、既存システムの上に構築したりするための設定管理機能はない。
 
-  * [Prometheus Operator](https://github.com/coreos/prometheus-operator): Manages Prometheus on top of Kubernetes
-  * [Promgen](https://github.com/line/promgen): Web UI and configuration generator for Prometheus and Alertmanager
+  * [Prometheus Operator](https://github.com/coreos/prometheus-operator): Kubernetes上でのPrometheusの管理をする
+  * [Promgen](https://github.com/line/promgen): PrometheusとAlertmanagerのためのWeb UIおよび設定ジェネレーター
 
-## Other
+## その他
 
-  * [karma](https://github.com/prymitive/karma): alert dashboard
-  * [PushProx](https://github.com/RobustPerception/PushProx): Proxy to transverse NAT and similar network setups
-  * [Promregator](https://github.com/promregator/promregator): discovery and scraping for Cloud Foundry applications
+  * [karma](https://github.com/prymitive/karma): アラートダッシュボード
+  * [PushProx](https://github.com/RobustPerception/PushProx): NATや類似のネットワーク構成を通過するためのプロキシ
+  * [Promregator](https://github.com/promregator/promregator): Cloud Foundryのアプリケーションの検出とスクレイプ

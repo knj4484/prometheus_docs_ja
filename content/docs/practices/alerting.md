@@ -1,74 +1,59 @@
 ---
-title: Alerting
+title: アラート
 sort_rank: 5
 ---
 
-# Alerting
+# アラート
 
-We recommend that you read [My Philosophy on Alerting](https://docs.google.com/a/boxever.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/edit)
-based on Rob Ewaschuk's observations at Google.
+Googleで見たことに基づくRob Ewaschukの[My Philosophy on Alerting](https://docs.google.com/a/boxever.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/edit)を読むことをお勧めする。
 
-To summarize: keep alerting simple, alert on symptoms, have good consoles to
-allow pinpointing causes, and avoid having pages where there is nothing to do.
+まとめると、アラートをシンプルに保つ、症状についてアラートする、原因を特定できるように良いコンソールを持つ、何もすることがない呼び出しを避けることである。
 
-## What to alert on
+## 何についてアラートするか
 
-Aim to have as few alerts as possible, by alerting on symptoms that are
-associated with end-user pain rather than trying to catch every possible way
-that pain could be caused. Alerts should link to relevant consoles
-and make it easy to figure out which component is at fault.
+苦痛を起こし得る可能性全てを捉えようとするのではなく、エンドユーザーの苦痛に結びついた症状についてアラーティングすることで、可能な限り少ないアラートが来ることを目指すこと。
+アラートには、関連するコンソールへのリンクがあって、どのコンポーネントが問題かがわかりやすくなっているべきである。
 
-Allow for slack in alerting to accommodate small blips.
+小さな問題は許容するようにアラートに余裕を持たせること。
 
-### Online serving systems
+### online-servingシステム
 
-Typically alert on high latency and error rates as high up in the stack as possible.
+一般的に、可能な限り高いレイヤーのレイテンシーとエラー率についてアラートすること。
 
-Only page on latency at one point in a stack. If a lower-level component is
-slower than it should be, but the overall user latency is fine, then there is
-no need to page.
+スタックの1箇所のレイテンシーについてのみ呼び出しを行うこと。
+低レベルのコンポーネントが遅くても、全体としてのレイテンシーが良好なら、呼び出しをする必要はない。
 
-For error rates, page on user-visible errors. If there are errors further down
-the stack that will cause such a failure, there is no need to page on them
-separately. However, if some failures are not user-visible, but are otherwise
-severe enough to require human involvement (for example, you are losing a lot of
-money), add pages to be sent on those.
+エラー率に関して、ユーザーに見えるエラーについて呼び出しを行うこと。
+そのようなエラーを引き起こし得る下位レイヤーのエラーが起きていたとしても、個別にそれらについて呼び出しをする必要はない。
+ただし、あるエラーが、ユーザーには見えなくても、人間の対応が必要なぐらい深刻（例えば、金銭的な損失が大きい）なら、それらについて呼び出しを追加すること。
 
-You may need alerts for different types of request if they have different
-characteristics, or problems in a low-traffic type of request would be drowned
-out by high-traffic requests.
+リクエストが種類によって異なる特徴を持つなら、それらに対して異なるアラートが必要になるだろう。
+そうしなければ、トラフィックの少ない種類のリクエストの問題は、トラフィックの多いリクエストに埋れて消えてしまうだろう。
 
-### Offline processing
+### オフライン処理
 
-For offline processing systems, the key metric is how long data takes to get
-through the system, so page if that gets high enough to cause user impact.
+オフライン処理システムに対しては、鍵となるメトリックは、データがシステムに入ってから出るまでにどれぐらいかかるかである。
+したがって、それがユーザーに影響を与えるぐらいまで高くなったら、呼び出しをするべきである。
 
-### Batch jobs
+### バッチジョブ
 
-For batch jobs it makes sense to page if the batch job has not succeeded
-recently enough, and this will cause user-visible problems.
+バッチジョブに対しては、直近で十分に成功しておらずユーザーに見える問題を起こしそうな場合に呼び出しを行うのが合理的である。
 
-This should generally be at least enough time for 2 full runs of the batch job.
-For a job that runs every 4 hours and takes an hour, 10 hours would be a
-reasonable threshold. If you cannot withstand a single run failing, run the
-job more frequently, as a single failure should not require human intervention.
+これは、バッチジョブ実行全体の少なくとも2回分に十分な時間にするべきである。
+4時間ごとに実行され1時間かかるジョブに対しては、10時間が合理的な閾値であろう。
+もし、一回の実行の失敗も耐えられないのであれば、一回の失敗で人間の介在が必要とならないように、ジョブをもっと頻繁に実行すること。
 
-### Capacity
+### キャパシティ
 
-While not a problem causing immediate user impact, being close to capacity
-often requires human intervention to avoid an outage in the near future.
+ユーザーへの影響をすぐに起こす問題ではないが、キャパシティに注意することは、近い将来の不測の事態を避けるために、しばしば人間の介在を必要とする。
 
-### Metamonitoring
+### メタ監視
 
-It is important to have confidence that monitoring is working. Accordingly, have
-alerts to ensure that Prometheus servers, Alertmanagers, PushGateways, and
-other monitoring infrastructure are available and running correctly.
+監視が動いていると確信を持つことは重要である。
+したがって、Prometheusサーバー、Alertmanager、Pushgatewayおよびその他の監視インフラが正しく動いていると保証するためにアラートするべきである。
 
-As always, if it is possible to alert on symptoms rather than causes, this helps
-to reduce noise. For example, a blackbox test that alerts are getting from
-PushGateway to Prometheus to Alertmanager to email is better than individual
-alerts on each.
+いつものように、原因ではなく症状についてアラートすることが可能ならば、そうするのがノイズを減らすことに繋がる。
+例えば、アラートがPushgatewayからPrometheusとAlertmanagerを通ってメールまで届くことのブラックボックステストは、それぞれに対する個別のアラートよりも良い。
 
-Supplementing the whitebox monitoring of Prometheus with external blackbox
-monitoring can catch problems that are otherwise invisible, and also serves as
-a fallback in case internal systems completely fail.
+Prometheusのホワイトボックステストを外部のブラックボックス監視で補うことで、そうしないと見つけられない問題を検出する可能性がある。
+また、内部システムが完全に失敗している場合の最後の拠り所として働く。

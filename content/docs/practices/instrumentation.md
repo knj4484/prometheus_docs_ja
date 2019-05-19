@@ -1,268 +1,200 @@
 ---
-title: Instrumentation
+title: メトリクスの組み込み
 sort_rank: 3
 ---
 
-# Instrumentation
+# メトリクスの組み込み
 
-This page provides an opinionated set of guidelines for instrumenting your code.
+このページは、自分のコードにメトリクスを組み込むためのガイドライン集を提供する。
 
-## How to instrument
+## メトリクスの組み込み方
 
-The short answer is to instrument everything. Every library, subsystem and
-service should have at least a few metrics to give you a rough idea of how it is
-performing.
+端的に言うと、全てをメトリクスとして組み込めということになる。
+全てのライブラリ、サブシステム、サービスは少なくとも、それがどのように振舞っているのか大まかに分かるようないくつかのメトリクスを持つべきである。
 
-Instrumentation should be an integral part of your code. Instantiate the metric
-classes in the same file you use them. This makes going from alert to console to code
-easy when you are chasing an error.
+メトリクスの組み込みは、あなたのコードと一体の部品となるべきである。
+メトリックのクラスは、それを利用する同じファイル中でインスタンス化すること。
+こうすることで、エラーを追跡する時に、アラートからコンソール、コードへと辿っていくのが簡単になる。
 
-### The three types of services
 
-For monitoring purposes, services can generally be broken down into three types:
-online-serving, offline-processing, and batch jobs. There is overlap between
-them, but every service tends to fit well into one of these categories.
+### サービスの3タイプ
 
-#### Online-serving systems
+監視の目的に対して、サービスは一般的に3種類（online-serving、offline-processing、バッチジョブ）に分類できる。これらには重なりもあるが、サービスはこれらの分類の一つによく当てはまる傾向にある。
 
-An online-serving system is one where a human or another system is expecting an
-immediate response. For example, most database and HTTP requests fall into
-this category.
+#### online-servingシステム
 
-The key metrics in such a system are the number of performed queries, errors,
-and latency. The number of in-progress requests can also be useful.
+online-servingシステムとは、人間または他のシステムが即座のレスポンスを期待しているシステムのことである。
+たとえば、ほとんどのデータベースとHTTPリクエストはこの分類に当てはまる。
 
-For counting failed queries, see section [Failures](#failures) below.
+こういったシステムで鍵となるメトリクスは、実行されたクエリの数、エラーの数、レイテンシーである。
+処理中のリクエストの数も有益かもしれない。
 
-Online-serving systems should be monitored on both the client and server side.
-If the two sides see different behaviors, that is very useful information for debugging.
-If a service has many clients, it is also not practical for the service to track them
-individually, so they have to rely on their own stats.
+失敗したクエリの数え方については、下記の[Failures](#failures)の部分を参照すること。
 
-Be consistent in whether you count queries when they start or when they end.
-When they end is suggested, as it will line up with the error and latency stats,
-and tends to be easier to code.
+online-servingのシステムは、クライアント側サーバー側の両方で監視されているべきである。
+もし、両側の振る舞いに違いがあれば、デバッグのための有益な情報となる。
+一つのサービスに対してたくさんのクライアントがあるなら、サービス側でそれらのクライアントを個別に追跡するのは現実的ではないので、
+クライアント側の統計に頼らざるを得ない。
 
-#### Offline processing
+クエリの開始時にカウントするのか、終了時にカウントするのかを統一すること。
+エラーやレイテンシーの統計も揃うので、クエリ終了時にカウントすることが提案されている。また、そうすると実装も簡単になる傾向がある。
 
-For offline processing, no one is actively waiting for a response, and batching
-of work is common. There may also be multiple stages of processing.
+#### オフライン処理
 
-For each stage, track the items coming in, how many are in progress, the last
-time you processed something, and how many items were sent out. If batching, you
-should also track batches going in and out.
+オフライン処理に対しては、レスポンスを能動的に待っている人はおらず、一括処理するのが普通である。
+また、処理に複数の段階があることもある。
 
-Knowing the last time that a system processed something is useful for detecting if it has stalled,
-but it is very localised information. A better approach is to send a heartbeat
-through the system: some dummy item that gets passed all the way through
-and includes the timestamp when it was inserted. Each stage can export the most
-recent heartbeat timestamp it has seen, letting you know how long items are
-taking to propagate through the system. For systems that do not have quiet
-periods where no processing occurs, an explicit heartbeat may not be needed.
+各段階に対して、入力された項目、処理中の数、処理の最終時刻、出力した項目を追跡すること。
+バッチにしている場合は、処理中のバッチおよび終了したバッチも追跡するべきである。
 
-#### Batch jobs
+処理の最終時刻を知ることは、処理の進行が遅れているかどうかを検出するために役立つが、非常に局所的な情報である。
+より良い方法は、システムを通じたheartbeat（システム全体を通過し、入力された時のタイムスタンプを含むダミーデータ）を送信することである。
+各段階では、システム中を伝播するのにどれぐらいかかっているかが分かるように、直近のheartbeatのタイムスタンプを出力することが可能になる。
+何も処理されていない時間があるシステムでは、明示的なheartbeatは不要かもしれない。
 
-There is a fuzzy line between offline-processing and batch jobs, as offline
-processing may be done in batch jobs. Batch jobs are distinguished by the
-fact that they do not run continuously, which makes scraping them difficult.
+#### バッチジョブ
 
-The key metric of a batch job is the last time it succeeded. It is also useful to track
-how long each major stage of the job took, the overall runtime and the last
-time the job completed (successful or failed). These are all gauges, and should
-be [pushed to a PushGateway](/docs/instrumenting/pushing/).
-There are generally also some overall job-specific statistics that would be
-useful to track, such as the total number of records processed.
+オフライン処理はおそらくバッチジョブで行われるので、オフライン処理とバッチジョブの境界線は曖昧である。
+バッチジョブには非連続的に動いているという特徴があり、それがスクレイピングを難しくしている。
 
-For batch jobs that take more than a few minutes to run, it is useful to also
-scrape them using pull-based monitoring. This lets you track the same metrics over time
-as for other types of jobs, such as resource usage and latency when talking to other
-systems. This can aid debugging if the job starts to get slow.
+バッチジョブの鍵となるメトリックは、最後に成功した時刻である。
+その他に有益なのは、主な段階それぞれにかかった時間、全体の実行時間、成功・失敗いずれにしても完了した最終時刻である。
+これらは全てゲージであり、[PushGatewayにプッシュ](/docs/instrumenting/pushing/)されるべきである。
+一般的に、ジョブ特有の全体的な統計情報（例えば、処理されたレコード数合計など）も追跡すると便利である。
 
-For batch jobs that run very often (say, more often than every 15 minutes), you should
-consider converting them into daemons and handling them as offline-processing jobs.
+実行に数分以上かかるバッチジョブに対しては、pullベースの監視によるscrapeをすることも有益である。
+これによって、他の種類のジョブと同じメトリクス（リソース使用量や他のシステムとの通信のレイテンシー）を追跡できるようになる。
+これは、ジョブが遅くなり始めたらデバッグの助けとなる。
 
-### Subsystems
+特に頻繁に（例えば、15分毎よりも頻繁に）実行されるバッチジョブに関しては、それをデーモンに変更し、offline-processingジョブとして扱うことを検討すべきである。
 
-In addition to the three main types of services, systems have sub-parts that
-should also be monitored.
+### サブシステム
 
-#### Libraries
+サービスの主な3タイプに加えて、システムは監視されるべき構成要素がある。
 
-Libraries should provide instrumentation with no additional configuration
-required by users.
+#### ライブラリ
 
-If it is a library used to access some resource outside of the process (for example,
-network, disk, or IPC), track the overall query count, errors (if errors are possible)
-and latency at a minimum.
+ライブラリは、ユーザーによる追加の設定を必要とすることなくメトリクス組み込みを提供すべきである。
 
-Depending on how heavy the library is, track internal errors and
-latency within the library itself, and any general statistics you think may be
-useful.
+もし、あるライブラリがプロセス外のリソース（例えば、ネットワークやディスク、IPC）にアクセスするために使われるなら、全クエリ数、（起きるなら）エラー、レイテンシーは少なくとも追跡すること。
 
-A library may be used by multiple independent parts of an application against
-different resources, so take care to distinguish uses with labels where
-appropriate. For example, a database connection pool should distinguish the databases
-it is talking to, whereas there is no need to differentiate
-between users of a DNS client library.
+ライブラリがどれぐらい重いかによって、内部エラー、ライブラリ自体の中のレイテンシー、その他思い付く一般的な指標を追跡するのが有益だろう。
 
-#### Logging
+ライブラリは、一つのアプリケーションでも複数の独立した部分によって異なるリソースに対して利用される可能性がある。
+したがって、適宜利用方法をラベルで区別するように注意すること。
+例えば、DBコネクションプールは接続先のDBを区別する必要がある一方で、DNSクライアントライブラリのユーザーを区別する必要はない。
 
-As a general rule, for every line of logging code you should also have a
-counter that is incremented. If you find an interesting log message, you want to
-be able to see how often it has been happening and for how long.
+#### ログ出力
 
-If there are multiple closely-related log messages in the same function (for example,
-different branches of an if or switch statement), it can sometimes make sense
-increment a single counter for all of them.
+一般的なルールとして、ログ出力するコード各行に対してインクリメントされるカウンターが存在するべきである。
+もしあなたの興味を引くログメッセージがあれば、どれぐらいの頻度、どれぐらいの長さでそれが起き続けているのか見れるようにしたいだろう。
 
-It is also generally useful to export the total number of info/error/warning
-lines that were logged by the application as a whole, and check for significant
-differences as part of your release process.
+同じ関数の中に関連性の高い複数のログメッセージがある場合（例えば、ifやswitch文の異なる分岐）、一つのカウンターをそれら全てでインクリメントするのが理に適っていることがある。
 
-#### Failures
+アプリケーション全体でログされたinfo/error/warningの合計数を出力し、リリースプロセスの一部として大きな差があったか確認することも一般的に有益である。
 
-Failures should be handled similarly to logging. Every time there is a failure, a
-counter should be incremented. Unlike logging, the error may also bubble up to a
-more general error counter depending on how your code is structured.
+#### エラー
 
-When reporting failures, you should generally have some other metric
-representing the total number of attempts. This makes the failure ratio easy to calculate.
+エラーは、ログ出力と同様に処理されるべきである。エラーが起きるたびに、カウンターをインクリメントするべきである。
+ログ出力と違って、エラーは、エラーは、コードの構造によっては、より一般的なエラーのカウンターになることもある。
 
-#### Threadpools
+エラーのレポートをする時には、一般的に、総試行回数を表す何か他のメトリックを持つべきである。
+これによってエラー率の計算が簡単に成る。
 
-For any sort of threadpool, the key metrics are the number of queued requests, the number of
-threads in use, the total number of threads, the number of tasks processed, and how long they took.
-It is also useful to track how long things were waiting in the queue.
+#### スレッドプール
 
-#### Caches
+どんなスレッドプールに対しても、鍵となるメトリクスは、キューされたリクエスト数、利用されているスレッド数、スレッドの総数、処理済みのタスク数および処理にかかった時間である。
+キューの中の待ち時間を追跡するのも有益である。
 
-The key metrics for a cache are total queries, hits, overall latency and then
-the query count, errors and latency of whatever online-serving system the cache is in front of.
+#### キャッシュ
 
-#### Collectors
+キャッシュの鍵となるメトリクスは、クエリ総数、ヒット数、全体のレイテンシー、そしてキャッシュの元となっているonline-servingシステムのクエリ数、エラー数、レイテンシーである。
 
-When implementing a non-trivial custom metrics collector, it is advised to export a
-gauge for how long the collection took in seconds and another for the number of
-errors encountered.
+#### コレクター
 
-This is one of the two cases when it is okay to export a duration as a gauge
-rather than a summary or a histogram, the other being batch job durations. This
-is because both represent information about that particular push/scrape, rather
-than tracking multiple durations over time.
+瑣末でないメトリクスのコレクターを実装する際は、処理にどれぐらい時間がかかったかを秒で表すゲージおよび起きたエラーの数を表すゲージを出力することを推奨する。
 
-## Things to watch out for
+これは、時間を、サマリーやヒストグラムではなく、ゲージとして出力しても良い2つのケースの1つである。
+もう一つのケースは、バッチジョブの時間である。
+どちらも、複数の時間ではなく、特定のpush/scrapeについての情報を表しているからである。
 
-There are some general things to be aware of when doing monitoring, and also
-Prometheus-specific ones in particular.
+## 注意点
 
-### Use labels
+監視をする際には、一般的な注意すべき点があり、Prometheusに固有な特に注意すべき点もある。
 
-Few monitoring systems have the notion of labels and an expression language to
-take advantage of them, so it takes a bit of getting used to.
+### ラベルを使う
 
-When you have multiple metrics that you want to add/average/sum, they should
-usually be one metric with labels rather than multiple metrics.
+ラベルという概念およびそれを活用するための言語を持つ監視システムは少ないので、慣れるのに少し時間がかかる。
 
-For example, rather than `http_responses_500_total` and `http_responses_403_total`,
-create a single metric called `http_responses_total` with a `code` label
-for the HTTP response code. You can then process the entire metric as one in
-rules and graphs.
+add/average/sumをしたい複数のメトリクスがある場合、それらを、複数のメトリクスではなく、複数のラベル値を持つ1つのメトリックにするべきである。
 
-As a rule of thumb, no part of a metric name should ever be procedurally
-generated (use labels instead). The one exception is when proxying metrics
-from another monitoring/instrumentation system.
+例えば、`http_responses_500_total`と`http_responses_403_total`ではなく、HTTPレスポンスコードのためのラベル`code`を持つ`http_responses_total`という1つのメトリックを作成する。
+これで、ルールやグラフ内で、1つのメトリックとして全体を処理することができる。
 
-See also the [naming](/docs/practices/naming/) section.
+大まかなルールとしては、メトリック名のどの部分も手続き的に生成されるべきではない（代わりにラベルを使う）。
+例外は、他の監視システム/メトリクス取得システムからメトリクスをプロキシする場合である。
 
-### Do not overuse labels
+[メトリック名とラベル名ベストプラクティス](/docs/practices/naming/)も参照すること。
 
-Each labelset is an additional time series that has RAM, CPU, disk, and network
-costs. Usually the overhead is negligible, but in scenarios with lots of
-metrics and hundreds of labelsets across hundreds of servers, this can add up
-quickly.
+### ラベルを使い過ぎない
 
-As a general guideline, try to keep the cardinality of your metrics below 10,
-and for metrics that exceed that, aim to limit them to a handful across your
-whole system. The vast majority of your metrics should have no labels.
+ラベル集合はそれぞれ、RAM、CPU、ディスク、ネットワークのコストがかかる追加の時系列である。
+普通はそのオーバーヘッドは無視できるが、たくさんのメトリクス、たくさんのラベル集合を何百ものサーバーから取得するような場合はすぐに積み上がってしまうだろう。
 
-If you have a metric that has a cardinality over 100 or the potential to grow
-that large, investigate alternate solutions such as reducing the number of
-dimensions or moving the analysis away from monitoring and to a general-purpose
-processing system.
+一般的なガイドラインとして、メトリクスのラベルの種類を10未満に収めるようにし、それを超えるメトリクスはシステム全体で一握りに収めること。メトリクスの大多数はラベルがないようにするべきである。
 
-To give you a better idea of the underlying numbers, let's look at node\_exporter.
-node\_exporter exposes metrics for every mounted filesystem. Every node will have
-in the tens of timeseries for, say, `node_filesystem_avail`. If you have
-10,000 nodes, you will end up with roughly 100,000 timeseries for
-`node_filesystem_avail`, which is fine for Prometheus to handle.
+100種類以上のラベルを持つ（あるいはそれぐらい増えそうな）メトリックがあったら、代わりの解決策（例えば、分析を監視から切り離し汎用処理システムに移す）を調査すること。
 
-If you were to now add quota per user, you would quickly reach a double digit
-number of millions with 10,000 users on 10,000 nodes. This is too much for the
-current implementation of Prometheus. Even with smaller numbers, there's an
-opportunity cost as you can't have other, potentially more useful metrics on
-this machine any more.
+背後にある数字を理解するために、node_exporterを見てみよう。
+node_exporterは、マウントされたファイルシステムそれぞれのメトリクスを出力する。
+各ノードには、例えば`node_filesystem_avail`のために、数十の時系列がある。
+もし、10,000ノードあるとすると、結局、`node_filesystem_avail`が約100,000時系列あることになるが、Prometheusは問題なく処理できる。
 
-If you are unsure, start with no labels and add more labels over time as
-concrete use cases arise.
+ここで、仮に、ユーザーごとのquotaを追加しようとすると、1万ノードに1万ユーザーで1億にすぐに達してしまう。
+これは、Prometheusの現在の実装に対して多過ぎる。
+これよりは少ない数の場合でも、もっと有益な可能性がある他のメトリクスをこのマシンでそれ以上持てなくなるという機会損失がある。
 
-### Counter vs. gauge, summary vs. histogram
+確信がない場合は、ラベルなしから始めて、時間とともに、具体的なユースケースが出てきたら、ラベルを追加していくこと。
 
-It is important to know which of the four main metric types to use for
-a given metric.
+### カウンターvsゲージ、サマリーvsヒストグラム
 
-To pick between counter and gauge, there is a simple rule of thumb: if
-the value can go down, it is a gauge.
+あるメトリックに対して4つの型のどれを使うべきか知っておくことは重要である。
 
-Counters can only go up (and reset, such as when a process restarts). They are
-useful for accumulating the number of events, or the amount of something at
-each event. For example, the total number of HTTP requests, or the total number of
-bytes sent in HTTP requests. Raw counters are rarely useful. Use the
-`rate()` function to get the per-second rate at which they are increasing.
+カウンターかゲージを選ぶための大まかなルールとして、値が減少するならそれはゲージである。
 
-Gauges can be set, go up, and go down. They are useful for snapshots of state,
-such as in-progress requests, free/total memory, or temperature. You should
-never take a `rate()` of a gauge.
+カウンターは、増加（およびプロセス再起動時などのリセット）しかしない。
+イベント数や各イベントの何かの量の集積に便利である。
+例えば、HTTPリクエストの総数やHTTPリクエストの送信バイト総数である。
+生のカウンターは滅多に役に立たず、値が増加する秒間レートを得るために関数`rate()`を使う。
 
-Summaries and histograms are more complex metric types discussed in
-[their own section](/docs/practices/histograms/).
+ゲージは、値のセット、増加、減少ができる。
+処理中のリクエスト、空きメモリ/総メモリ量、温度など、状態のスナップショットに便利である。
+決してゲージの`rate()`をとってはいけない。
 
-### Timestamps, not time since
+サマリーとヒストグラムは、もっと複雑なメトリック型であり、[別ページ](/docs/practices/histograms/)で議論されている。
 
-If you want to track the amount of time since something happened, export the
-Unix timestamp at which it happened - not the time since it happened.
+### 経過時間ではなくタイムスタンプ
 
-With the timestamp exported, you can use the expression `time() - my_timestamp_metric` to
-calculate the time since the event, removing the need for update logic and
-protecting you against the update logic getting stuck.
+何かが起きてからの時間を追跡したい場合、（それが起きてからの経過時間ではなく）Unixタイムスタンプを出力すること。
+
+タイムスタンプが出力されていれば、`time() - my_timestamp_metric`という式を使ってそのイベントからの経過時間を計算することができ、メトリックの更新ロジックが要らなくなる。
 
 ### Inner loops
 
-In general, the additional resource cost of instrumentation is far outweighed by
-the benefits it brings to operations and development.
+メトリクスを処理したり開発するリソースの追加コストは、一般的には、それがもたらす利益と比べれば微々たるものである。
 
-For code which is performance-critical or called more than 100k times a second
-inside a given process, you may wish to take some care as to how many metrics
-you update.
+パフォーマンスが重要なコード（言い換えると、あるプロセスで秒間100k回以上呼び出されるようなコード）に対して、どれぐらい多くのメトリクスを更新するかについて注意を払いたくなるだろう。
 
-A Java counter takes
-[12-17ns](https://github.com/prometheus/client_java/blob/master/benchmark/README.md)
-to increment depending on contention. Other languages will have similar
-performance. If that amount of time is significant for your inner loop, limit
-the number of metrics you increment in the inner loop and avoid labels (or
-cache the result of the label lookup, for example, the return value of `With()`
-in Go or `labels()` in Java) where possible.
+Javaのカウンターは、インクリメントするのに[12-17ns](https://github.com/prometheus/client_java/blob/master/benchmark/README.md)かかる。
+他の言語でも同様なパフォーマンスになるだろう。
+もし、その時間の長さがループにおいて重大であるなら、ループでインクリメントするメトリクス数を制限し、ラベルを避ける（言い換えると、Goの`With()`やJavaの`labels()`などのラベル検索の結果をキャッシュする）こと。
 
-Beware also of metric updates involving time or durations, as getting the time
-may involve a syscall. As with all matters involving performance-critical code,
-benchmarks are the best way to determine the impact of any given change.
+時間の取得はシステムコールを含むので、時刻や時間幅を含むメトリックの更新にも注意すること。
+パフォーマンスが重要なコードに関する全ての問題と同様に、変更の影響を確認するには、ベンチマークが最良の方法である。
 
-### Avoid missing metrics
+### メトリクスの欠落の回避
 
-Time series that are not present until something happens are difficult
-to deal with, as the usual simple operations are no longer sufficient
-to correctly handle them. To avoid this, export `0` (or `NaN`, if `0`
-would be misleading) for any time series you know may exist in
-advance.
+何かが起きるまで現れない時系列は、通常の簡単な操作がそれらを適切に処理するのに不十分なので、処理するのがむずかしい。
+これを防ぐために、存在しうる時系列に対してあらかじめ`0`（`0`が誤解を生むなら`NaN`）を出力すること。
 
-Most Prometheus client libraries (including Go, Java, and Python) will
-automatically export a `0` for you for metrics with no labels.
+GO、Java、Pythonを含むPrometheusクライアントライブラリのほとんどは、ラベルのないメトリクスに対して自動的に`0`を出力する。

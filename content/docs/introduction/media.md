@@ -1,35 +1,32 @@
 ---
-title: Media
+title: メディア
 sort_rank: 7
 ---
 
-# Media
+# メディア
 
-There is a [subreddit](https://www.reddit.com/r/prometheusmonitoring)
-collecting all Prometheus-related resources on the internet.
+インターネット上のPrometheus関連の全てのリソースを収集する[subreddit](https://www.reddit.com/r/prometheusmonitoring)がある。
 
-The following selection of resources are particularly useful to get started
-with Prometheus.
+Prometheusを始めてみるのに特に有益なリソースを選んだものを以下に示す。
 
-## Blogs
+## ブログ
 
-* This site has its own [blog](/blog/).
-* [SoundCloud's blog post announcing Prometheus](https://developers.soundcloud.com/blog/prometheus-monitoring-at-soundcloud)
-  – a more elaborate overview than the one given on this site.
-* Prometheus-related posts on the
-  [Robust Perception blog](https://www.robustperception.io/tag/prometheus/).
+* このサイト自体に[ブログ](/blog/)がある
+* [PrometheusをアナウンスするSoundCloudのブログ記事](https://developers.soundcloud.com/blog/prometheus-monitoring-at-soundcloud)
+  - このサイトのものより丁寧な概要
+* [Robust Perception blog](https://www.robustperception.io/tag/prometheus/)のPrometheus関連の記事
 
-## Tutorials
+## チュートリアル
 
-* [Instructions and example code for a Prometheus workshop](https://github.com/juliusv/prometheus_workshop).
-* [How To Install Prometheus using Docker on Ubuntu 14.04](https://www.digitalocean.com/community/tutorials/how-to-install-prometheus-using-docker-on-ubuntu-14-04).
+* [Prometheusワークショップのための手順書とサンプルコード](https://github.com/juliusv/prometheus_workshop).
+* [Ubuntu 14.04上でDockerを用いてPrometheusをインストールする方法](https://www.digitalocean.com/community/tutorials/how-to-install-prometheus-using-docker-on-ubuntu-14-04).
 
-## Podcasts and interviews
+## Podcastとインタビュー
 
 * [Prometheus on FLOSS Weekly 357](https://twit.tv/shows/floss-weekly/episodes/357) - Julius Volz on the [FLOSS Weekly TWiT.tv](https://twit.tv/shows/floss-weekly/) show.
 * [Prometheus and Service Monitoring](https://changelog.com/168/) - Julius Volz on the [Changelog](https://changelog.com/) podcast.
 
-## Recorded talks
+## 発表動画
 
 * [Prometheus: A Next-Generation Monitoring System](https://www.usenix.org/conference/srecon15europe/program/presentation/rabenstein) – Julius Volz and Björn Rabenstein at SREcon15 Europe, Dublin.
 * [Prometheus: A Next-Generation Monitoring System](https://www.youtube.com/watch?v=cwRmXqXKGtk) - Brian Brazil at FOSDEM 2016 ([slides](http://www.slideshare.net/brianbrazil/prometheus-a-next-generation-monitoring-system-fosdem-2016)).
@@ -39,9 +36,9 @@ with Prometheus.
 * In German: [Monitoring mit Prometheus](https://media.ccc.de/v/eh16-43-monitoring_mit_prometheus#video&t=2804) – Michael Stapelberg at [Easterhegg 2016](https://eh16.easterhegg.eu/).
 * In German: [Prometheus in der Praxis](https://media.ccc.de/v/MRMCD16-7754-prometheus_in_der_praxis) – Jonas Große Sundrup at [MRMCD 2016](https://2016.mrmcd.net/en/)
 
-## Presentation slides
+## 発表スライド
 
-### General
+### 一般
 
 * [Prometheus Overview](http://www.slideshare.net/brianbrazil/prometheus-overview) – by Brian Brazil.
 * [Systems Monitoring with Prometheus](http://www.slideshare.net/brianbrazil/devops-ireland-systems-monitoring-with-prometheus) – Brian Brazil at Devops Ireland Meetup, Dublin.

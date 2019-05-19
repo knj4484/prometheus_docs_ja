@@ -1,85 +1,70 @@
 ---
-title: Metric and label naming
+title: メトリック名とラベル名
 sort_rank: 1
 ---
 
-# Metric and label naming
+# メトリック名とラベル名
 
-The metric and label conventions presented in this document are not required
-for using Prometheus, but can serve as both a style-guide and a collection of
-best practices. Individual organizations may want to approach some of these 
-practices, e.g. naming conventions, differently.
+このドキュメントで提示されているメトリックとラベルの規約は、Prometheusの利用にあたって必須とは言えないが、スタイルガイドおよびベストプラクティスとして利用できる。個々の組織では、これらのプラクティスのいくつか（例えば、命名規約）を変更したいかもしれない。
 
-## Metric names
+## メトリック名
 
-A metric name...
+メトリック名は、
 
-* ...must comply with the [data model](/docs/concepts/data_model/#metric-names-and-labels) for valid characters.
-* ...should have a (single-word) application prefix relevant to the domain the
-  metric belongs to. The prefix is sometimes referred to as `namespace` by
-  client libraries. For metrics specific to an application, the prefix is
-  usually the application name itself. Sometimes, however, metrics are more
-  generic, like standardized metrics exported by client libraries. Examples:
- * <code><b>prometheus</b>\_notifications\_total</code>
-   (specific to the Prometheus server)
- * <code><b>process</b>\_cpu\_seconds\_total</code>
-   (exported by many client libraries)
- * <code><b>http</b>\_request\_duration\_seconds</code>
-   (for all HTTP requests)
-* ...must have a single unit (i.e. do not mix seconds with milliseconds, or seconds with bytes).
-* ...should use base units (e.g. seconds, bytes, meters - not milliseconds, megabytes, kilometers). See below for a list of base units.
-* ...should have a suffix describing the unit, in plural form. Note that an accumulating count has `total` as a suffix, in addition to the unit if applicable.
- * <code>http\_request\_duration\_<b>seconds</b></code>
- * <code>node\_memory\_usage\_<b>bytes</b></code>
- * <code>http\_requests\_<b>total</b></code>
-   (for a unit-less accumulating count)
- * <code>process\_cpu\_<b>seconds\_total</b></code>
-   (for an accumulating count with unit)
-* ...should represent the same logical thing-being-measured across all label
-  dimensions.
- * request duration
- * bytes of data transfer
- * instantaneous resource usage as a percentage
+* 正当な文字に関して[データモデル](/docs/concepts/data_model/#metric-names-and-labels)に従わなければならない
+* そのメトリックが属しているドメインに関する一単語のアプリケーションprefixを付けるべきである。このprefixは、クライアントライブラリでは、名前空間（namespace）と呼ばれることがある。あるアプリケーションの特有のメトリックでは、アプリケーション名自体が普通はprefixとなる。クライアントライブラリからexportされている標準化されたメトリックのように一般的なものもある。例えば、
+  * <code><b>prometheus</b>\_notifications\_total</code>
+    (Prometheusサーバーに特有のもの)
+  * <code><b>process</b>\_cpu\_seconds\_total</code>
+    (たくさんのクライアントライブラリからexportされたもの)
+  * <code><b>http</b>\_request\_duration\_seconds</code>
+    (全てのHTTPリクエストのためのもの)
+* 単位を一つだけ持つべきである。秒とミリ秒を混ぜたり、秒とバイトを混ぜたりしないこと。
+* 基本単位を使うべきである。例えば、ミリ秒、メガバイト、キロメーターではなく、秒、バイト、メーターを使う。
+* 単位を複数形で表したsuffixを付けるべきである。カウントには、suffixとして、(適用可能な単位があればそれに加えて）`total`を付けること。
+  * <code>http\_request\_duration\_<b>seconds</b></code>
+  * <code>node\_memory\_usage\_<b>bytes</b></code>
+  * <code>http\_requests\_<b>total</b></code>
+    (単位がないカウント)
+  * <code>process\_cpu\_<b>seconds\_total</b></code>
+    (単位のあるカウント)
+* 全てのラベル軸を通して同一の論理的な測定対象を表すべきである。
+  * リクエスト持続時間
+  * 転送データのバイト数
+  * 瞬間的なリソース利用のパーセント
 
-As a rule of thumb, either the `sum()` or the `avg()` over all dimensions of a
-given metric should be meaningful (though not necessarily useful). If it is not
-meaningful, split the data up into multiple metrics. For example, having the
-capacity of various queues in one metric is good, while mixing the capacity of a
-queue with the current number of elements in the queue is not.
+大まかなルールとして、`sum()`や`avg()`が全ての軸に対して意味をなすようにするべきである。
+もしそれらが意味をなさないなら、そのデータを複数のメトリクスに分解すること。
+例えば、様々なキューの容量を一つのメトリックとして持つことは良いが、キューの現在の要素数を混ぜるのは良くない。
 
-## Labels
+## ラベル
 
-Use labels to differentiate the characteristics of the thing that is being measured:
+ラベルは、測定されるものの特徴が区別できるように使うこと。
 
- * `api_http_requests_total` - differentiate request types: `type="create|update|delete"`
- * `api_request_duration_seconds` - differentiate request stages: `stage="extract|transform|load"`
+- `api_http_requests_total` - リクエストタイプが区別できるようにする: `type="create|update|delete"`
+- `api_request_duration_seconds` - リクエストの段階が区別できるようにする: `stage="extract|transform|load"`
 
-Do not put the label names in the metric name, as this introduces redundancy
-and will cause confusion if the respective labels are aggregated away.
+ラベル名をメトリック名に入れないこと。入れてしまうと、集約してそのラベルがなくなったときに混乱を起こす。
 
-CAUTION: Remember that every unique combination of key-value label
-pairs represents a new time series, which can dramatically increase the amount
-of data stored. Do not use labels to store dimensions with high cardinality
-(many different label values), such as user IDs, email addresses, or other
-unbounded sets of values.
+CAUTION: 全てのkey-valueの組み合わせは新しい時系列となり、データ量を劇的に増やしてしまう。沢山の値を持つラベル（ユーザーIDやメールアドレス、その他の無限集合であるもの）は使わないこと
 
+## 基本単位
 
-## Base units
+Prometheusには、ハードコードされた単位はない。
+互換性をよくするために、基本単位を用いるべきである。
+以下に、いくつかのメトリクスの種類とその基本単位の一覧を示す。
+この一覧は網羅的ではない。
 
-Prometheus does not have any units hard coded. For better compatibility, base
-units should be used. The following lists some metrics families with their base unit.
-The list is not exhaustive.
-
-| Family | Base unit | Remark | 
+| 種類 | 基本単位 | 備考 | 
 | -------| --------- | ------ |
-| Time   | seconds   |        |
-| Temperature | celsius | Celsius is the most common one encountered in practice |
-| Length | meters | |
-| Bytes  | bytes | | 
-| Bits   | bytes | |
-| Percent | ratio(*) | Values are 0-1. <br/> *) Usually 'ratio' is not used as suffix, but rather A\_per\_B. Exceptions are e.g. disk\_usage\_ratio  |
-| Voltage | volts | |
-| Electric current | amperes | | 
-| Energy | joules | |
-| Weight | grams | |
+| 時間   | seconds   |        |
+| 気温 | celsius | セルシウスが実際に遭遇する最もよくある単位である |
+| 長さ | meters | |
+| バイト  | bytes | | 
+| ビット   | bytes | |
+| パーセント | ratio(*) | 値は0-1である。<br/>普通、ratioをサフィックスとして使うのではなく、A\_per\_Bとする。例外は、例えば、disk\_usage\_ratioである |
+| 電圧 | volts | |
+| 電流 | amperes | | 
+| エネルギー | joules | |
+| 重さ | grams | |
  

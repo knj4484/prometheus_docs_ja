@@ -1,56 +1,38 @@
 ---
-title: Console templates
+title: コンソールテンプレート
 sort_rank: 3
 ---
 
-# Console templates
+# コンソールテンプレート
 
-Console templates allow for creation of arbitrary consoles using the [Go
-templating language](http://golang.org/pkg/text/template/). These are served
-from the Prometheus server.
+コンソールテンプレートによって、[Go templating language](http://golang.org/pkg/text/template/)で書かれた任意のコンソールを作成することができる。
 
-Console templates are the most powerful way to create templates that can be
-easily managed in source control. There is a learning curve though, so users new
-to this style of monitoring should try out
-[Grafana](/docs/visualization/grafana/) first.
+コンソールテンプレートは、簡単にバージョン管理できるテンプレートを作成する最も強力な方法である。ただ、学習コストは高いので、このスタイルの監視に慣れていないユーザーは、まず[Grafana](/docs/visualization/grafana/)を試すのが良い。
 
 ## Getting started
 
-Prometheus comes with an example set of consoles to get you going. These can be
-found at `/consoles/index.html.example` on a running Prometheus and will
-display Node Exporter consoles if Prometheus is scraping Node Exporters with a
-`job="node"` label.
+Prometheusには、コンソールのサンプル集がある。これらは稼働しているPrometheusの`/consoles/index.html.example`で見ることができ、
+Node Exporterが`job="node"`というラベルでスクレイプしているなら、Node Exporterのコンソールを表示する。
 
-The example consoles have 5 parts:
+このサンプルコンソールは、5つの部分からなる
 
-1. A navigation bar on top
-1. A menu on the left
-1. Time controls on the bottom
-1. The main content in the center, usually graphs
-1. A table on the right
+1. 上部のナビゲーションバー
+2. 左側のメニュー
+3. 下部の時間コントロール
+4. 中央のメインコンテンツ（普通はグラフ）
+5. 右側の表
 
-The navigation bar is for links to other systems, such as other Prometheis
-<sup>[1](/docs/introduction/faq/#what-is-the-plural-of-prometheus)</sup>,
-documentation, and whatever else makes sense to you. The menu is for navigation
-inside the same Prometheus server, which is very useful to be able to quickly
-open a console in another tab to correlate information. Both are configured in
-`console_libraries/menu.lib`.
+ナビゲーションバーは、他のPrometheusなどの他システム、ドキュメントなどへのリンクである。メニューは、そのPrometheusサーバー自体の中のナビゲーションに用い、コンソールを新しいタブで開いて情報の相互関連性を見るために便利である。どちらも`console_libraries/menu.lib`で設定することが出来る。
 
-The time controls allow changing of the duration and range of the graphs.
-Console URLs can be shared and will show the same graphs for others.
+時間コントロールによって、グラフの間隔と幅を変更することが出来る。コンソールのURLは共有することが出来て、他の人にも同じグラフを表示する。
 
-The main content is usually graphs. There is a configurable JavaScript graphing
-library provided that will handle requesting data from Prometheus, and rendering
-it via [Rickshaw](https://shutterstock.github.io/rickshaw/).
+メインコンテンツは、普通はグラフである。設定可能なJavaScriptのグラフライブラリが提供されていて、Prometheusからのデータのリクエストと[Rickshaw](https://tech.shutterstock.com/rickshaw/)を通した描画が出来る。
 
-Finally, the table on the right can be used to display statistics in a more
-compact form than graphs.
+最後に、右側の表は、グラフよりコンパクトに統計情報を表示するために利用できる。
 
-## Example Console
+## コンソールの例
 
-This is a basic console. It shows the number of tasks, how many of them are up,
-the average CPU usage, and the average memory usage in the right-hand-side
-table. The main content has a queries-per-second graph.
+これは、基本的なコンソールで、右側の表にタスクの数、いくつのタスクがupか、平均メモリ使用量を表示し、メインコンテンツとして毎秒のクエリ数のグラフを表示する。
 
 ```
 {{template "head" .}}
@@ -101,33 +83,24 @@ new PromConsole.Graph({
 {{template "tail"}}
 ```
 
-The `prom_right_table_head` and `prom_right_table_tail` templates contain the
-right-hand-side table. This is optional.
+`prom_right_table_head`と`prom_right_table_tail`テンプレートは、右側の表を含んでいる。これは必須ではない。
 
-`prom_query_drilldown` is a template that will evaluate the expression passed to it, format it,
-and link to the expression in the [expression browser](/docs/visualization/browser/). The first
-argument is the expression. The second argument is the unit to use. The third
-argument is how to format the output. Only the first argument is required.
+`prom_query_drilldown`は、渡された式を評価し、フォーマットし、[expressionブラウザ](/docs/visualization/browser/)の式へリンクするテンプレートである。
+第1引数が式で、第2引数は単位、第3引数は出力のフォーマット方法である。第1引数のみ必須である。
 
-Valid output formats for the third argument to `prom_query_drilldown`:
+`prom_query_drilldown`の第3引数の正当な出力フォーマットは以下の通り。
 
-* Not specified: Default Go display output.
-* `humanize`: Display the result using [metric prefixes](http://en.wikipedia.org/wiki/Metric_prefix).
-* `humanizeNoSmallPrefix`: For absolute values greater than 1, display the
-  result using [metric prefixes](http://en.wikipedia.org/wiki/Metric_prefix). For
-  absolute values less than 1, display 3 significant digits. This is useful
-  to avoid units such as milliqueries per second that can be produced by
-  `humanize`.
-* `humanize1024`: Display the humanized result using a base of 1024 rather than 1000.
-  This is usually used with `B` as the second argument to produce units such as `KiB` and `MiB`.
-* `printf.3g`: Display 3 significant digits.
+* 指定しない: デフォルトのGoのディスプレイ出力
+* `humanize`: 結果を[SI接頭辞](https://ja.wikipedia.org/wiki/SI%E6%8E%A5%E9%A0%AD%E8%BE%9E)を用いて表示
+- `humanizeNoSmallPrefix`: 1より大きな値は[SI接頭辞](https://ja.wikipedia.org/wiki/SI%E6%8E%A5%E9%A0%AD%E8%BE%9E)を用いて表示、1より小さな値は3桁表示。これは、`humanize`で生成されるmilliqueries *er secondのような単位を避けるために便利である
+- `humanize1024`: 1000ではなく1024を底としたhumanize同様の表示をする。これは、`KiB`や`MiB`のような単位を生成するため*、`B`を第2引数にしたときによく利用される。
+* `printf.3g`: 3桁表示
 
-Custom formats can be defined. See
-[prom.lib](https://github.com/prometheus/prometheus/blob/master/console_libraries/prom.lib) for examples.
+カスタムのフォーマットも定義できる。サンプルは、[prom.lib](https://github.com/prometheus/prometheus/blob/master/console_libraries/prom.lib)を参照のこと。
 
-## Graph Library
+## グラフライブラリ
 
-The graph library is invoked as:
+グラフライブラリは次のように呼び出す。
 
 ```
 <div id="queryGraph"></div>
@@ -139,38 +112,33 @@ new PromConsole.Graph({
 </script>
 ```
 
-The `head` template loads the required Javascript and CSS.
+`head`テンプレートが必要なJavaScriptとCSSをロードする。
 
-Parameters to the graph library:
+グラフライブラリのパラメーターは以下の通り。
 
-| Name          | Description
+| 名前          | 説明
 | ------------- | -------------
-| expr          | Required. Expression to graph. Can be a list.
-| node          | Required. DOM node to render into.
-| duration      | Optional. Duration of the graph. Defaults to 1 hour.
-| endTime       | Optional. Unixtime the graph ends at. Defaults to now.
-| width         | Optional. Width of the graph, excluding titles. Defaults to auto-detection.
-| height        | Optional. Height of the graph, excluding titles and legends. Defaults to 200 pixels.
-| min           | Optional. Minimum x-axis value. Defaults to lowest data value.
-| max           | Optional. Maximum y-axis value. Defaults to highest data value.
-| renderer      | Optional. Type of graph. Options are `line` and `area` (stacked graph). Defaults to `line`.
-| name          | Optional. Title of plots in legend and hover detail. If passed a string, `[[ label ]]` will be substituted with the label value. If passed a function, it will be passed a map of labels and should return the name as a string. Can be a list.
-| xTitle        | Optional. Title of the x-axis. Defaults to `Time`.
-| yUnits        | Optional. Units of the y-axis. Defaults to empty.
-| yTitle        | Optional. Title of the y-axis. Defaults to empty.
-| yAxisFormatter | Optional. Number formatter for the y-axis. Defaults to `PromConsole.NumberFormatter.humanize`.
-| yHoverFormatter | Optional. Number formatter for the hover detail. Defaults to `PromConsole.NumberFormatter.humanizeExact`.
-| colorScheme   | Optional. Color scheme to be used by the plots. Can be either a list of hex color codes or one of the [color scheme names](https://github.com/shutterstock/rickshaw/blob/master/src/js/Rickshaw.Fixtures.Color.js) supported by Rickshaw. Defaults to `'colorwheel'`.
+| expr          | 必須。グラフにする式。リストも可
+| node          | 必須。描画するためのDOMノード
+| duration      | オプション。グラフの期間。デフォルトは1時間
+| endTime       | オプション。グラフの最後のunixtime。デフォルトは現在
+| width         | オプション。グラフの幅（タイトルを除く）。デフォルトは、自動検出
+| height        | オプション。グラフの高さ（タイトルと凡例を除く）。デフォルトは200ピクセル
+| min           | オプション。X軸最小値。デフォルトは、データの最低値
+| max           | オプション。Y軸最大値。デフォルトは、データの最高値
+| renderer      | オプション。グラフの種類。`line`または`area`。デフォルトは、`line`
+| name          | オプション。凡例とhover detailで使われるプロットのタイトル。文字列が渡された場合、`[[ label ]]`はラベルの値で置換される。関数が渡された場合、ラベルのマップが渡されるので、文字列として名前を返すこと。リストも可
+| xTitle        | オプション。X軸のタイトル。デフォルトは`Time`
+| yUnits        | オプション。Y軸の単位。デフォルトは、空
+| yTitle        | オプション。Y軸のタイトル。デフォルトは、空
+| yAxisFormatter | オプション。Y軸の数値のフォーマッター。デフォルトは、`PromConsole.NumberFormatter.humanize`
+| yHoverFormatter | オプション。hover detailの数値のフォーマッター。デフォルトは、`PromConsole.NumberFormatter.humanizeExact`
+| colorScheme   | オプション。プロットで利用されるカラースキーム。hex color codeのリストまたはRickshawでサポートされている[カラースキーム名](https://github.com/shutterstock/rickshaw/blob/master/src/js/Rickshaw.Fixtures.Color.js)。デフォルトは、`'colorwheel'`
 
-If both `expr` and `name` are lists, they must be of the same length. The name
-will be applied to the plots for the corresponding expression.
+`expr`と`name`の両方がリストの場合、両者は同じ長さでなければならない。`name`は、対応する式のプロットに適用される。
 
-Valid options for the `yAxisFormatter` and `yHoverFormatter`:
+`yAxisFormatter`と`yHoverFormatter`の正当なオプションは以下の通り。
 
-* `PromConsole.NumberFormatter.humanize`: Format using [metric prefixes](http://en.wikipedia.org/wiki/Metric_prefix).
-* `PromConsole.NumberFormatter.humanizeNoSmallPrefix`: For absolute values
-  greater than 1, format using using [metric prefixes](http://en.wikipedia.org/wiki/Metric_prefix).
-  For absolute values less than 1, format with 3 significant digits. This is
-  useful to avoid units such as milliqueries per second that can be produced by
-  `PromConsole.NumberFormatter.humanize`.
-* `PromConsole.NumberFormatter.humanize1024`: Format the humanized result using a base of 1024 rather than 1000.
+* `PromConsole.NumberFormatter.humanize`: [SI接頭辞](https://ja.wikipedia.org/wiki/SI%E6%8E%A5%E9%A0%AD%E8%BE%9E)を用いたフォーマット
+* `PromConsole.NumberFormatter.humanizeNoSmallPrefix`: 1より大きな値は[SI接頭辞](https://ja.wikipedia.org/wiki/SI%E6%8E%A5%E9%A0%AD%E8%BE%9E)を用いてフォーマット、1より小さな値は3桁を用いたフォーマット。これは、`humanize`で生成されるmilliqueries per secondのような単位を避けるために便利である
+* `PromConsole.NumberFormatter.humanize1024`: 1000ではなく1024を底としたhumanize同様のフォーマット

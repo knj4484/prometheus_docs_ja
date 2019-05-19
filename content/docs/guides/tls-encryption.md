@@ -1,28 +1,31 @@
 ---
-title: TLS encryption
+title: TLS暗号
 sort_rank: 1
 ---
 
-# Securing Prometheus API and UI endpoints using TLS encryption
+# TLS暗号でPrometheusのAPIとUIエンドポイントを安全にする
 
-Prometheus does not directly support [Transport Layer Security](https://en.wikipedia.org/wiki/Transport_Layer_Security) (TLS) encryption for connections to Prometheus instances (i.e. to the expression browser or [HTTP API](../../prometheus/latest/querying/api)). If you would like to enforce TLS for those connections, we recommend using Prometheus in conjunction with a [reverse proxy](https://www.nginx.com/resources/glossary/reverse-proxy-server/) and applying TLS at the proxy layer. You can use any reverse proxy you like with Prometheus, but in this guide we'll provide an [nginx example](#nginx-example).
+Prometheusは、expressionブラウザと[HTTP API](../../prometheus/latest/querying/api)の接続に対して、[Transport Layer Security](https://ja.wikipedia.org/wiki/Transport_Layer_Security) (TLS)暗号を直接サポートしていない。 
+それらの接続にTLSを要求したいなら、Prometheusを[リバースプロキシ](https://www.nginx.com/resources/glossary/reverse-proxy-server/)と組み合わせて使い、プロキシレイヤーでTLSを適用することを推奨する。
+自分の好きなリバースプロキシをPrometheusと共に利用することができるが、このガイドでは、[nginxの例](#nginx-example)を提供する。
 
-NOTE: Although TLS connections *to* Prometheus instances are not supported, TLS is supported for connections *from* Prometheus instances to [scrape targets](../prometheus/latest/configuration/configuration/#<tls_config>).
+NOTE: Prometheusインスタンス*への*TLS接続はサポートされていないが、Prometheus*から*[監視対象](../prometheus/latest/configuration/configuration/#<tls_config>)への接続ではTLSがサポートされている。
 
-## nginx example
+## nginxの例
 
-Let's say that you want to run a Prometheus instance behind an [nginx](https://www.nginx.com/) server available at the `example.com` domain (which you own), and for all Prometheus endpoints to be available via the `/prometheus` endpoint. The full URL for Prometheus' `/metrics` endpoint would thus be:
+ドメイン`example.com`でアクセス可能な[nginx](https://www.nginx.com/)サーバーの後ろでPrometheusインスタンスを運用し、全てのPrometheusのエンドポイントが`/prometheus`を通して利用可能にしたいとする。
+つまり、Prometheusのエンドポイント`/metrics`に対する完全なURLは、以下のようになるだろう。
 
 ```
 https://example.com/prometheus/metrics
 ```
 
-Let's also say that you've generated the following using [OpenSSL](https://www.digitalocean.com/community/tutorials/openssl-essentials-working-with-ssl-certificates-private-keys-and-csrs) or an analogous tool:
+また、既に、[OpenSSL](https://www.digitalocean.com/community/tutorials/openssl-essentials-working-with-ssl-certificates-private-keys-and-csrs)または類似ツールで以下のファイルを生成してあるとする。
 
-* an SSL certificate at `/root/certs/example.com/example.com.crt`
-* an SSL key at `/root/certs/example.com/example.com.key`
+* SSL証明書 `/root/certs/example.com/example.com.crt`
+* SSLキー `/root/certs/example.com/example.com.key`
 
-You can generate a self-signed certificate and private key using this command:
+自己証明書と秘密鍵はこのコマンドで生成することができる。
 
 ```bash
 mkdir -p /root/certs/example.com && cd /root/certs/example.com
@@ -34,14 +37,14 @@ openssl req \
   -out example.com.crt
 ```
 
-Fill out the appropriate information at the prompts, and make sure to enter `example.com` at the `Common Name` prompt.
+プロンプトで適切な情報を入力し、`Common Name`のプロンプトには`example.com`を入力する。
 
-## nginx configuration
+## nginxの設定
 
-Below is an example [`nginx.conf`](https://www.nginx.com/resources/wiki/start/topics/examples/full/) configuration file. With this configuration, nginx will:
+設定ファイル[`nginx.conf`](https://www.nginx.com/resources/wiki/start/topics/examples/full/)の例を以下に示す。この設定で、nginxは、
 
-* enforce TLS encryption using your provided certificate and key
-* proxy all connections to the `/prometheus` endpoint to a Prometheus server running on the same host (while removing the `/prometheus` from the URL)
+* 用意した証明書と鍵でTLS暗号を要求する
+* エンドポイント`/prometheus`への全ての接続を、同じホストで稼働しているPrometheusサーバーへプロキシする（同時にURLから`/prometheus`を削除する）
 
 ```conf
 http {
@@ -60,17 +63,17 @@ http {
 events {}
 ```
 
-Start nginx as root (since nginx will need to bind to port 443):
+nginxが443ポートをバインドする必要があるので、rootとしてnginxを起動する。
 
 ```bash
 sudo nginx -c /usr/local/etc/nginx/nginx.conf
 ```
 
-NOTE: This example uses `/usr/local/etc/nginx` as the location of the nginx configuration file, but this will vary based on the installation. Other [common nginx config directories](http://nginx.org/en/docs/beginners_guide.html) include `/usr/local/nginx/conf` and `/etc/nginx`.
+NOTE: この例では、`.htpasswd`を含むnginxの設定ファイルの場所として、`/etc/nginx`を用いるが、インストールの仕方によって異なるであろう。他の[よくあるnginxの設定ディレクトリ](http://nginx.org/en/docs/beginners_guide.html)は、`/usr/local/nginx/conf`と`/usr/local/etc/nginx`が挙げられる。
 
-## Prometheus configuration
+## Prometheusの設定
 
-When running Prometheus behind the nginx proxy, you'll need to set the external URL to `http://example.com/prometheus` and the route prefix to `/`:
+nginxプロキシの後ろでPrometheusを稼働させる際には、外部URLを`http://example.com/prometheus`に、ルートプリフィックスを`/`にセットする必要がある。
 
 ```bash
 prometheus \
@@ -79,7 +82,7 @@ prometheus \
   --web.route-prefix="/"
 ```
 
-## Testing
+## テスト
 
 If you'd like to test out the nginx proxy locally using the `example.com` domain, you can add an entry to your `/etc/hosts` file that re-routes `example.com` to `localhost`:
 
@@ -87,14 +90,14 @@ If you'd like to test out the nginx proxy locally using the `example.com` domain
 127.0.0.1     example.com
 ```
 
-You can then use cURL to interact with your local nginx/Prometheus setup:
+そうすると、cURLを利用してローカルで構築したnginx/Prometheusに接続できる。
 
 ```bash
 curl --cacert /root/certs/example.com/example.com.crt \
   https://example.com/prometheus/api/v1/label/job/values
 ```
 
-You can connect to the nginx server without specifying certs using the `--insecure` or `-k` flag:
+フラグ`--insecure`または`-k`を使うことで、証明書を指定せずにnginxサーバーに接続することができる。
 
 ```bash
 curl -k https://example.com/prometheus/api/v1/label/job/values

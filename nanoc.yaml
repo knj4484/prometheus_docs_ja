@@ -69,16 +69,16 @@ data_sources:
     items_root: /docs/prometheus/latest/
     config:
       name: 'latest (2.8)'
-      repository: https://github.com/prometheus/prometheus.git
-      refspec: release-2.8
+      repository: https://github.com/knj4484/prometheus.git
+      refspec: release-ja-2.8
   -
     type: repo_docs
     identifier_type: legacy
     items_root: /docs/prometheus/2.8/
     config:
       name: '2.8'
-      repository: https://github.com/prometheus/prometheus.git
-      refspec: release-2.8
+      repository: https://github.com/knj4484/prometheus.git
+      refspec: release-ja-2.8
       canonical: /docs/prometheus/latest/
   -
     type: repo_docs

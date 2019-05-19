@@ -1,48 +1,39 @@
 ---
-title: Comparison to alternatives
+title: 代替システムとの比較
 sort_rank: 4
 ---
 
-# Comparison to alternatives
+# 代替システムとの比較
 
 ## Prometheus vs. Graphite
 
-### Scope
+### スコープ
 
-[Graphite](http://graphite.readthedocs.org/en/latest/) focuses on being a
-passive time series database with a query language and graphing features. Any
-other concerns are addressed by external components.
+[Graphite](http://graphite.readthedocs.org/en/latest/)は、クエリ言語とグラフ化機能を持った受動的な時系列データーベースであることに焦点を当てている。
+その他の事は、外部コンポーネントで解決される。
 
-Prometheus is a full monitoring and trending system that includes built-in and
-active scraping, storing, querying, graphing, and alerting based on time series
-data. It has knowledge about what the world should look like (which endpoints
-should exist, what time series patterns mean trouble, etc.), and actively tries
-to find faults.
+Prometheusは、完全な監視・トレンド分析システムであり、組み込みで能動的なスクレイピング、保存、クエリ、グラフ化、時系列に基づいたアラートを含んでいる。
+Prometheusは、世界がどうあるべきか（どのエンドポイントが存在すべきか、時系列のどんなパターンが問題を表しているかなど）について分かっていて能動的に問題を発見しようとする。
 
-### Data model
+### データモデル
 
-Graphite stores numeric samples for named time series, much like Prometheus
-does. However, Prometheus's metadata model is richer: while Graphite metric
-names consist of dot-separated components which implicitly encode dimensions,
-Prometheus encodes dimensions explicitly as key-value pairs, called labels, attached
-to a metric name. This allows easy filtering, grouping, and matching by these
-labels via the query language.
+Graphiteは、Prometheusと同じように、名前の付いた時系列の数値的なサンプルを保存する。
+しかし、Prometheusのメタデータのモデルの方が、表現力が高い。
+Graphiteのメトリック名がドット区切りの要素で軸を暗黙的に表現しているのに対して、
+Prometheusは、メトリック名に付随するラベルと呼ばれるキーバリューとして軸を明示的に表現する。
+これによって、クエリ言語でラベルによってフィルタリング、グルーピング、マッチングが簡単にできるようになる。
 
-Further, especially when Graphite is used in combination with
-[StatsD](https://github.com/etsy/statsd/), it is common to store only
-aggregated data over all monitored instances, rather than preserving the
-instance as a dimension and being able to drill down into individual
-problematic instances.
+さらに、Graphiteが[StatsD](https://github.com/etsy/statsd/)と組み合わせて利用されると、
+インスタンスを要素として保存して問題のある個別のインスタンスを深掘りできるようにするのではなく、
+監視されているインスタンス全てについて集約されたデータだけを保存するのが普通である。
 
-For example, storing the number of HTTP requests to API servers with the
-response code `500` and the method `POST` to the `/tracks` endpoint would
-commonly be encoded like this in Graphite/StatsD:
+例えば、レスポンスコードが`500`でメソッドが`POST`でエンドポイント`/tracks`へのAPIサーバーへのリクエスト数を保存するには、Graphite/StatsDでは、普通、以下のようにエンコードされるだろう。
 
 ```
 stats.api-server.tracks.post.500 -> 93
 ```
 
-In Prometheus the same data could be encoded like this (assuming three api-server instances):
+Prometheusでは同じデータは以下のようにエンコードされるだろう（3台のapiサーバーインスタンスを仮定）。
 
 ```
 api_server_http_requests_total{method="POST",handler="/tracks",status="500",instance="<sample1>"} -> 34
@@ -50,227 +41,196 @@ api_server_http_requests_total{method="POST",handler="/tracks",status="500",inst
 api_server_http_requests_total{method="POST",handler="/tracks",status="500",instance="<sample3>"} -> 31
 ```
 
-### Storage
+### ストレージ
 
-Graphite stores time series data on local disk in the
-[Whisper](http://graphite.readthedocs.org/en/latest/whisper.html) format, an
-RRD-style database that expects samples to arrive at regular intervals. Every
-time series is stored in a separate file, and new samples overwrite old ones
-after a certain amount of time.
+Graphiteは、時系列データをローカルディスクに[Whisper](http://graphite.readthedocs.org/en/latest/whisper.html)形式で保存する。
+Whisperは、RRDスタイルのデータベースで、サンプルが規則正しい間隔でやってくることを想定している。
+各時系列は、別々のファイルに保存され、一定時間後に新しいサンプルが古いサンプルを上書きする。
 
-Prometheus also creates one local file per time series, but allows storing
-samples at arbitrary intervals as scrapes or rule evaluations occur. Since new
-samples are simply appended, old data may be kept arbitrarily long. Prometheus
-also works well for many short-lived, frequently changing sets of time series.
+Prometheusも時系列ごとに1つのローカルファイルを作成するが、スクレイプやルール評価が起きる任意の間隔でサンプルを保存することができる。
+新しい値は単純に追加されるので、古いデータは任意の期間保持することが可能である。
+Prometheusは短命の頻繁に更新される時系列の集合に対してもうまく機能する。
 
-### Summary
+### まとめ
 
-Prometheus offers a richer data model and query language, in addition to being
-easier to run and integrate into your environment. If you want a clustered
-solution that can hold historical data long term, Graphite may be a better
-choice.
-
+Prometheusは、既存の環境で実行したり連携するのが簡単であるだけでなく、表現力の高いデータモデルとクエリ言語を提供する。
+長期間の過去データを保持できるクラスタ化されたソリューションが必要なら、Graphiteの方が良い選択であろう。
 
 ## Prometheus vs. InfluxDB
 
-[InfluxDB](https://influxdata.com/) is an open-source time series database,
-with a commercial option for scaling and clustering. The InfluxDB project was
-released almost a year after Prometheus development began, so we were unable to
-consider it as an alternative at the time. Still, there are significant
-differences between Prometheus and InfluxDB, and both systems are geared
-towards slightly different use cases.
+[InfluxDB](https://influxdata.com/)は、オープンソースの時系列データベースであり、商用のスケーリングとクラスタリングのオプションがある。
+InfluxDBプロジェクトはPrometheusの開発開始のほぼ1年後にリリースされたので、我々は当時はそれが代替システムであるとXX
+今でも、PrometheusとInfluxDBには大きな違いがあり、両システムは少し違ったユースケースに合わせている。
 
-### Scope
+### スコープ
 
-For a fair comparison, we must also consider
-[Kapacitor](https://github.com/influxdata/kapacitor) together with InfluxDB, as
-in combination they address the same problem space as Prometheus and the
-Alertmanager.
+比較が公平になるように、InfluxDBと共に[Kapacitor](https://github.com/influxdata/kapacitor)について考えなければならない。
+なぜなら、それらは組み合わせて、PrometheusとAlertmanagerと同じ領域の問題を解決するからである。
 
-The same scope differences as in the case of
-[Graphite](#prometheus-vs-graphite) apply here for InfluxDB itself. In addition
-InfluxDB offers continuous queries, which are equivalent to Prometheus
-recording rules.
+[Graphite](#prometheus-vs-graphite)の場合と同じスコープの違いが、ここでもInfluxDB自体に当てはまる。
+さらに、InfluxDBには、Prometheusのレコーディングルールに相当するContinuous Queryがある。
 
-Kapacitor’s scope is a combination of Prometheus recording rules, alerting
-rules, and the Alertmanager's notification functionality. Prometheus offers [a
-more powerful query language for graphing and
-alerting](https://www.robustperception.io/translating-between-monitoring-languages/).
-The Prometheus Alertmanager additionally offers grouping, deduplication and
-silencing functionality.
+Kapacitorのスコープは、Prometheusのレコーディングルールとアラートルール、Alertmanagerの通知機能の組み合わせである。
+Prometheusには、[グラフ化とアラートのためのもっと強力なクエリ言語](https://www.robustperception.io/translating-between-monitoring-languages/)がある。
+Alertmanagerは、さらに、グルーピング、重複排除、サイレンスの機能がある。
 
-### Data model / storage
+### データモデル / ストレージ
 
-Like Prometheus, the InfluxDB data model has key-value pairs as labels, which
-are called tags. In addition, InfluxDB has a second level of labels called
-fields, which are more limited in use. InfluxDB supports timestamps with up to
-nanosecond resolution, and float64, int64, bool, and string data types.
-Prometheus, by contrast, supports the float64 data type with limited support for
-strings, and millisecond resolution timestamps.
+Prometheusと同様に、InfluxDBのデータモデルはラベルとしてキーバリューペアがあり、タグと呼ばれている。
+さらに、InfluxDBは、フィールドと呼ばれる2番目のレベルのラベルをサポートする。
+フィールドは、使用にあたってはかなり制限がある。
+InfluxDBは、ナノ秒までの解像度のタイムスタンプ、float64/int64/bool/stringのデータ型をサポートする。
+それに対して、Prometheusは、限られたサポートの文字列とfloat64のデータ型、ミリ秒の解像度のタイムスタンプをサポートしている。
 
-InfluxDB uses a variant of a [log-structured merge tree for storage with a write ahead log](https://docs.influxdata.com/influxdb/v1.2/concepts/storage_engine/),
-sharded by time. This is much more suitable to event logging than Prometheus's
-append-only file per time series approach.
 
-[Logs and Metrics and Graphs, Oh My!](https://blog.raintank.io/logs-and-metrics-and-graphs-oh-my/)
-describes the differences between event logging and metrics recording.
+InfluxDBは、時間でシャードされた[log-structured merge tree for storage with a write ahead log](https://docs.influxdata.com/influxdb/v1.2/concepts/storage_engine/)の変種を使っている。
+これは、Prometheusの時系列ごとの追記のみのファイルを使う方法よりもイベントロギングに適している。
 
-### Architecture
+[Logs and Metrics and Graphs, Oh My!](https://blog.raintank.io/logs-and-metrics-and-graphs-oh-my/)がイベントロギングとメトリクスの記録の違いに付いて説明している。
 
-Prometheus servers run independently of each other and only rely on their local
-storage for their core functionality: scraping, rule processing, and alerting.
-The open source version of InfluxDB is similar.
+### アーキテクチャー
 
-The commercial InfluxDB offering is, by design, a distributed storage cluster
-with storage and queries being handled by many nodes at once.
+Prometheusサーバーはお互いに独立して稼働し、中核となる機能（スクレイピング、ルールの処理、アラート）にはローカルのストレージだけに依存している。
+オープンソース版のInfluxDBも同様である。
 
-This means that the commercial InfluxDB will be easier to scale horizontally,
-but it also means that you have to manage the complexity of a distributed
-storage system from the beginning. Prometheus will be simpler to run, but at
-some point you will need to shard servers explicitly along scalability
-boundaries like products, services, datacenters, or similar aspects.
-Independent servers (which can be run redundantly in parallel) may also give
-you better reliability and failure isolation.
+商用InfluxDBが提供しているものは、仕様として、ストレージとクエリがたくさんのノードで同時に処理される分散ストレージクラスタである。
 
-Kapacitor's open-source release has no built-in distributed/redundant options for 
-rules,  alerting, or notifications.  The open-source release of Kapacitor can 
-be scaled via manual sharding by the user, similar to Prometheus itself.
-Influx offers [Enterprise Kapacitor](https://docs.influxdata.com/enterprise_kapacitor), which supports an 
-HA/redundant alerting system.
+商用InfluxDBは、水平にスケールするのが容易ということであるが、分散ストレージシステムの複雑さを最初からなんとかしなければならないということでもある。
+Prometheusは稼働させるのが簡単だが、いつかはサーバーを、明示的にスケーラビリティの境界（プロダクト、サービス、データセンターまたは剃られに類する側面）に沿ってシャードしなければならなくなるだろう。
+独立したサーバー（並行して冗長に実行できるもの）は、より良い信頼性とエラーの独立性をもたらすだろう。
 
-Prometheus and the Alertmanager by contrast offer a fully open-source redundant 
-option via running redundant replicas of Prometheus and using the Alertmanager's 
-[High Availability](https://github.com/prometheus/alertmanager#high-availability)
-mode. 
+Kapacitorのオープンソースのリリースは、アラートや通知に対する組み込みの分散された/冗長性のある選択肢はない。
+Kapacitorのオープンソースのリリースは、Prometheus自体と同様に、ユーザーによる手動のシャーディングでスケールすることができる。
+Influxは、可用性が高く冗長性のあるアラートシステム、[Enterprise Kapacitor](https://docs.influxdata.com/enterprise_kapacitor)を提供する。
 
-### Summary
+PrometheusとAlertmanagerは、対照的に、完全にオープンソースの冗長な選択肢がある。
+Prometheusの冗長なレプリカ稼働させて、Alertmanagerの[高可用](https://github.com/prometheus/alertmanager#high-availability)モードを利用することで冗長にする。
 
-There are many similarities between the systems. Both have labels (called tags
-in InfluxDB) to efficiently support multi-dimensional metrics. Both use
-basically the same data compression algorithms. Both have extensive
-integrations, including with each other. Both have hooks allowing you to extend
-them further, such as analyzing data in statistical tools or performing
-automated actions.
+### まとめ
 
-Where InfluxDB is better:
+この2つのシステムには多くの類似性がある。
+どちらにも、多次元メトリクスを効率的にサポートするためのラベルがある（InfluxDBではタグと呼ばれる）。
+どちらも基本的には同じ圧縮アルゴリズムを用いる。
+どちらも、お互いを含む、幅広いインテグレーションがある。
+どちらも、インテグレーションを他のもの（統計ツールでのデータ分析や自動化された処理の実行など）にも広げられるようにフックがある。
 
-  * If you're doing event logging.
-  * Commercial option offers clustering for InfluxDB, which is also better for long term data storage.
-  * Eventually consistent view of data between replicas.
+InfluxDBの方が良い点は以下の通り。
 
-Where Prometheus is better:
+  * イベントロギングをする場合
+  * 商用版はInfluxDBのためのクラスタリングを提供しており、長期のデータ保存にも良い
+  * 最終的に一貫性のあるレプリカ間のデータの見え方
 
-  * If you're primarily doing metrics.
-  * More powerful query language, alerting, and notification functionality.
-  * Higher availability and uptime for graphing and alerting.
+Prometheusの方が良い点は以下の通り。
 
-InfluxDB is maintained by a single commercial company following the open-core
-model, offering premium features like closed-source clustering, hosting and
-support. Prometheus is a [fully open source and independent project](/community/), maintained
-by a number of companies and individuals, some of whom also offer commercial services and support.
+  * メトリクスを第一に利用する場合
+  * より強力なクエリ言語、アラーティング、通知機能
+  * グラフ化とアラートのための高い可用性と稼働時間
+
+InfluxDBは、オープンコアモデルに従った1つの営利企業によって保守されており、クローズドソースのクラスタリング、ホスティング、サポートなどのプレミアム機能を提供している。
+Prometheusは、[完全にオープンソースで独立したプロジェクト](/community/)であり、多くの企業と個人によって保守されている。
+そのうちのいくつかの企業は商用のサービスとサポートを提供している。
 
 ## Prometheus vs. OpenTSDB
 
-[OpenTSDB](http://opentsdb.net/) is a distributed time series database based on
-[Hadoop](http://hadoop.apache.org/) and [HBase](http://hbase.apache.org/).
+[OpenTSDB](http://opentsdb.net/)は、[Hadoop](http://hadoop.apache.org/)と[HBase](http://hbase.apache.org/)に基づいた分散時系列データベースである。
 
-### Scope
+### スコープ
 
-The same scope differences as in the case of
-[Graphite](/docs/introduction/comparison/#prometheus-vs-graphite) apply here.
+[Graphite](/docs/introduction/comparison/#prometheus-vs-graphite)の場合と同様のスコープの差がここでも当てはまる。
 
-### Data model
+### データモデル
 
-OpenTSDB's data model is almost identical to Prometheus's: time series are
-identified by a set of arbitrary key-value pairs (OpenTSDB tags are
-Prometheus labels). All data for a metric is 
-[stored together](http://opentsdb.net/docs/build/html/user_guide/writing/index.html#time-series-cardinality),
-limiting the cardinality of metrics. There are minor differences though: Prometheus
-allows arbitrary characters in label values, while OpenTSDB is more restrictive. 
-OpenTSDB also lacks a full query language, only allowing simple aggregation and math via its API.
+OpenTSDBのデータモデルは、Prometheusとほぼ一致する。
+時系列は、任意のキーバリューの組み合わせ（OpenTSDBのタグがPrometheusのラベルに相当する）で特定される。
+1つのメトリックのための全てのデータは、メトリクスのタグの種類を制限しつつ、[一緒に保存](http://opentsdb.net/docs/build/html/user_guide/writing/index.html#time-series-cardinality)される。
+ただし、小さな違いはある。
+Prometheusはラベル値に任意の文字を許すが、OpenTSDBは制限が強い。
+OpenTSDBは、完全なクエリ言語がなく、APIを通じた簡単な集約と計算ができるだけである。
 
-### Storage
+### ストレージ
 
-[OpenTSDB](http://opentsdb.net/)'s storage is implemented on top of
-[Hadoop](http://hadoop.apache.org/) and [HBase](http://hbase.apache.org/). This
-means that it is easy to scale OpenTSDB horizontally, but you have to accept
-the overall complexity of running a Hadoop/HBase cluster from the beginning.
+[OpenTSDB](http://opentsdb.net/)のストレージは、[Hadoop](http://hadoop.apache.org/)と[HBase](http://hbase.apache.org/)の上で実装されている。
+これは、OpenTSDBを水平にスケールさせるのが容易であるが、最初からHadoop/HBaseクラスタを運用する全体的な複雑性を受け入れなければならないことを意味している。
 
-Prometheus will be simpler to run initially, but will require explicit sharding
-once the capacity of a single node is exceeded.
+Prometheusは、初期の運用は単純だが、1つのノードの容量を越えると明示的にシャーディングする必要がある。
 
-### Summary
+### まとめ
 
-Prometheus offers a much richer query language, can handle higher cardinality
-metrics, and forms part of a complete monitoring system. If you're already
-running Hadoop and value long term storage over these benefits, OpenTSDB is a
-good choice.
+Prometheusの方が、かなり表現力の高いクエリ言語を提供し、ラベル値の種類の多いメトリクスを扱うことができ、完全な監視システムの一部となる。
+もし既にHadoopを運用しており、これらの利益より長期ストレージに価値があるなら、OpenTSDBは良い選択である。
 
 ## Prometheus vs. Nagios
 
-[Nagios](https://www.nagios.org/) is a monitoring system that originated in the
-1990s as NetSaint.
+[Nagios](https://www.nagios.org/)は、90年代にNetSaintとして始まった監視システムである。
 
-### Scope
+### スコープ
 
 Nagios is primarily about alerting based on the exit codes of scripts. These are 
 called “checks”. There is silencing of individual alerts, however no grouping, 
 routing or deduplication.
+Nagiosは、本来、スクリプトの終了コードを元にしたアラートをXXX
+これらは「チェック」と呼ばれる。
+個々のアラートを黙らせることはできるが、グループ化やルーティング、重複排除はできない。
 
 There are a variety of plugins. For example, piping the few kilobytes of
 perfData plugins are allowed to return [to a time series database such as Graphite](https://github.com/shawn-sterling/graphios) or using NRPE to [run checks on remote machines](https://exchange.nagios.org/directory/Addons/Monitoring-Agents/NRPE--2D-Nagios-Remote-Plugin-Executor/details).
+様々なプラグインがある。
+例えば、
+perfDataプラグイン
+は、[Graphiteなどの時系列データーベースに送る](https://github.com/shawn-sterling/graphios)ことができる。
+[リモートのマシン上でチェックを実行する](https://exchange.nagios.org/directory/Addons/Monitoring-Agents/NRPE--2D-Nagios-Remote-Plugin-Executor/details)ためにNRPEを使う
 
-### Data model
+### データモデル
 
-Nagios is host-based. Each host can have one or more services and each service
-can perform one check.
+Nagiosはホストベースである。
+各ホストは複数のサービスを持つことができ、各サービスは1つのチェックを実行する。
 
-There is no notion of labels or a query language.
+ラベルやクエリ言語といった概念はない。
 
-### Storage
+### ストレージ
 
-Nagios has no storage per-se, beyond the current check state.
-There are plugins which can store data such as [for visualisation](https://docs.pnp4nagios.org/).
+Nagios自体には、現在のチェックの状態を超えたストレージはない。
+[可視化のため](https://docs.pnp4nagios.org/)などにデータを保存できるプラグインはある。
 
-### Architecture
+### アーキテクチャー
 
-Nagios servers are standalone. All configuration of checks is via file.
+Nagiosサーバーはスタンドアローンである。
+チェックの設定は全てファイルで行う。
 
-### Summary
+### まとめ
 
-Nagios is suitable for basic monitoring of small and/or static systems where
-blackbox probing is sufficient.
+Nagiosは、ブラックボックスの検査で十分な小さいシステムや静的なシステムの基本的な監視に適している。
 
-If you want to do whitebox monitoring, or have a dynamic or cloud based
-environment, then Prometheus is a good choice.
+ホワイトボックスの監視がしたかったり、動的またはクラウドベースの環境であるなら、Prometheusが良い選択である。
 
 ## Prometheus vs. Sensu
 
 [Sensu](https://sensu.io) is a composable monitoring pipeline that can reuse existing Nagios checks.
+[Sensu](https://sensu.io)は、既存のNagiosのチェックを再利用できる。
 
-### Scope
+### スコープ
 
-The same general scope differences as in the case of Nagios apply here.
+Nagiosの場合と同様の一般的なスコープの差がここでも当てはまる。
 
-There is also a [client socket](https://docs.sensu.io/sensu-core/latest/reference/clients/#what-is-the-sensu-client-socket) permitting ad-hoc check results to be pushed into Sensu. 
+アドホックなチェックの結果をSensuにプッシュできるようにする[クライアントソケット](https://docs.sensu.io/sensu-core/latest/reference/clients/#what-is-the-sensu-client-socket)もある。
 
-### Data model
+### データモデル
 
-Sensu has the same rough data model as [Nagios](/docs/introduction/comparison/#prometheus-vs-nagios).
+[Nagios](/docs/introduction/comparison/#prometheus-vs-nagios)と同じ大雑把なデータモデルを持つ。
 
-### Storage
+### ストレージ
 
-Sensu uses Redis to persist monitoring data, including the Sensu client registry, check results, check execution history, and current event data.
+Sensuは、Sensuクライアントのレジストリ、チェック結果、チェック実行履歴、現在のイベントのデータを含む監視データを永続化するためにRedisを利用する。
 
-### Architecture
+### アーキテクチャー
 
-Sensu has a [number of components](https://docs.sensu.io/sensu-core/latest/overview/architecture/). It uses
-RabbitMQ as a transport, Redis for current state, and a separate server for
-processing and API access.
+Sensuには、[多くのコンポーネント](https://docs.sensu.io/sensu-core/latest/overview/architecture/)がある。
+メッセージの送受信にRabbitMQ、現在の状態についてはRedis、処理とAPIアクセスのために別のサーバーを使う。
 
-All components of a Sensu deployment (RabbitMQ, Redis, and Sensu Server/API) can be clustered for highly available and redundant configurations.
+Sensuデプロイの全てのコンポーネント（RabbitMQ、Redis、Sensu Server/API）は、可用性が高く冗長な構成にするためにクラスタ化できる。
 
-### Summary
-If you have an existing Nagios setup that you wish to scale as-is, or want to take advantage of the automatic registration feature of Sensu, then Sensu is a good choice.
+### まとめ
 
-If you want to do whitebox monitoring, or have a very dynamic or cloud based environment, then Prometheus is a good choice.
+そのままスケールさせたい既存のNagiosが構築されていたり、Sensuの自動登録機能を使いたい場合は、Sensuが良い選択である。
+
+ホワイトボックスの監視がしたかったり、動的またはクラウドベースの環境であるなら、Prometheusが良い選択である。

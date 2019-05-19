@@ -1,125 +1,106 @@
 ---
-title: Glossary
+title: 用語集
 sort_rank: 8
 ---
 
-# Glossary
+# **用語集**
 
 
-### Alert
+### アラート（alert）
 
-An alert is the outcome of an alerting rule in Prometheus that is
-actively firing. Alerts are sent from Prometheus to the Alertmanager.
+アラートは、Prometheusのアラートルールの結果で、firingなものである。 アラートは、PrometheusからAlertmanagerに送信される。
 
 ### Alertmanager
 
-The [Alertmanager](../../alerting/overview/) takes in alerts, aggregates them into
-groups, de-duplicates, applies silences, throttles, and then sends out
-notifications to email, Pagerduty, Slack etc.
+[Alertmanager](../../alerting/overview/)は、アラートを取り込み、 それらをグループに集約したり、重複を排除したり、サイレンスを適用したり、抑制したりした上で、eメールやPagerDuty、Slackなどに通知を送信する。
 
-### Bridge
+### ブリッジ（bridge）
 
-A bridge is a component that takes samples from a client library and
-exposes them to a non-Prometheus monitoring system. For example, the Python, Go, and Java clients can export metrics to Graphite.
+ブリッジは、クライアントライブラリから値を取得し、Prometheus以外の監視システムに対してそれらを出力するコンポーネントである。 例えば、PythonやGo、JavaのクライアントはGraphiteにメトリクスを出力することができる。
 
-### Client library
+### クライアントライブラリ（client library）
 
-A client library is a library in some language (e.g. Go, Java, Python, Ruby)
-that makes it easy to directly instrument your code, write custom collectors to
-pull metrics from other systems and expose the metrics to Prometheus.
+クライアントライブラリは、なんらかの言語（例えば、Go、Java、Python、Ruby）で、独自のコードに対して直接メトリクスを実装したり、他のシステムからメトリクスを取得する独自のコレクターを書いたり、Prometheusにメトリクスを出力することを容易にするためのライブラリである。
 
-### Collector
+### コレクター（collector）
 
-A collector is a part of an exporter that represents a set of metrics. It may be
-a single metric if it is part of direct instrumentation, or many metrics if it is pulling metrics from another system.
+コレクターは、エクスポーター（exporter）の一部で、メトリクスの集合を表す。 コレクターは、直接メトリクスを実装したら1つのメトリクスのこともあるし、他のシステムからメトリクスを取得したらたくさんのメトリクスであることもある。
 
-### Direct instrumentation
+### 直接のメトリクス組み込み（direct instrumentation）
 
-Direct instrumentation is instrumentation added inline as part the source code
-of a program.
+直接のメトリクス組み込みとは、あるプログラムのソースコードの一部としてインラインで追加されているメトリクスの組み込みのことである。
 
-### Endpoint
+### エンドポイント（endpoint）
 
-A source of metrics that can be scraped, usually corresponding to a single process.
+スクレイプされるメトリクスの出どころ。 通常は、1つのプロセスに対応する。
 
-### Exporter
+### エクスポーター（exporter）
 
-An exporter is a binary that exposes Prometheus metrics, commonly by converting
-metrics that are exposed in a non-Prometheus format into a format Prometheus supports.
+exporterは、Prometheusのメトリクスを出力するバイナリである。Prometheus以外の形式で出力されているメトリクスを、Prometheusがサポートする形式に変換することがよくある。
 
-### Instance
+### インスタンス（instance）
 
-An instance is a label that uniquely identifies a target in a job.
+インスタンスは、ジョブ中でターゲットをユニークに識別するラベルである。
 
-### Job
+### ジョブ（job）
 
-A collection of targets with the same purpose, for example monitoring a group of like processes replicated for scalability or reliability, is called a job.
+同じ目的（例えば、スケーラビリティや信頼性のために複製されたプロセスのグループの監視）の監視対象の集合をジョブと呼ぶ。
 
-### Notification
+### 通知（notification）
 
-A notification represents a group of one of more alerts, and is sent by the Alertmanager to email, Pagerduty, Slack etc.
+通知は、1つ以上のアラートのグループを表し、AlertmanagerによってeメールやPagerDuty、Slackなどに送信される。
 
 ### Promdash
 
-Promdash was a native dashboard builder for Prometheus. It has been deprecated and replaced by [Grafana](../../visualization/grafana/).
+Promdashは、Prometheusのためにダッシュボードを構築する独自の仕組みだったが、非推奨となり、[Grafana](../../visualization/grafana/)に置き換えられた。
 
 ### Prometheus
 
-Prometheus usually refers to the core binary of the Prometheus system. It may
-also refer to the Prometheus monitoring system as a whole.
+Prometheusは、通常は、Prometheusシステムのコアのバイナリを指す。 また、Prometheus監視システム全体を指すこともある。
 
 ### PromQL
 
-[PromQL](/docs/prometheus/latest/querying/basics/) is the Prometheus Query Language. It allows for
-a wide range of operations including aggregation, slicing and dicing, prediction and joins.
+[PromQL](/docs/prometheus/latest/querying/basics/)とは、Prometheusクエリ言語（Prometheus Query Language）のことである。 PromQLによって、集約や予測、結合などを含む幅広い操作が可能となる。
 
 ### Pushgateway
 
-The [Pushgateway](../../instrumenting/pushing/) persists the most recent push
-of metrics from batch jobs. This allows Prometheus to scrape their metrics
-after they have terminated.
+[Pushgateway](../../instrumenting/pushing/)は、バッチジョブからpushされた最新のメトリクスを保持する。 これによって、バッチが終了した後でもメトリクスを取得することが可能になる。
 
 ### Remote Read
 
-Remote read is a Prometheus feature that allows transparent reading of time series from
-other systems (such as long term storage) as part of queries.
+Remote readは、他のシステム（例えば、長期ストレージ）からクエリの一部として時系列を透過的に読み取ることを可能とするPrometheusの機能である。
 
 ### Remote Read Adapter
 
-Not all systems directly support remote read. A remote read adapter sits between
-Prometheus and another system, converting time series requests and responses between them.
+全てのシステムがremote readを直接サポートしている訳ではない。 remote read adapterは、Prometheusと他のシステムの間で時系列のリクエストとレスポンスを変換する。
 
 ### Remote Read Endpoint
 
-A remote read endpoint is what Prometheus talks to when doing a remote read.
+remote read endpointは、Prometheusがremote readをする際のPrometheusの通信先のことである。
 
 ### Remote Write
 
-Remote write is a Prometheus feature that allows sending ingested samples on the
-fly to other systems, such as long term storage.
+remote writeは、Prometheusが取得した値を即時に他のシステム（例えば長期ストレージ）に送信する機能である。
 
 ### Remote Write Adapter
 
-Not all systems directly support remote write. A remote write adapter sits
-between Prometheus and another system, converting the samples in the remote
-write into a format the other system can understand.
+全てのシステムがremote writeを直接サポートしている訳ではない。 remote write adapterは、Prometheusと他のシステムの間で、remote writeの値を他のシステムが理解可能な形式に変換する。
 
 ### Remote Write Endpoint
 
-A remote write endpoint is what Prometheus talks to when doing a remote write.
+remote write endpointは、Prometheusがremote writeをする際のPrometheusの通信先のことである。
 
-### Sample
+### サンプル（sample）
 
-A sample is a single value at a point in time in a time series.
+サンプルとは、時系列のある時点での1つの値である。
 
-In Prometheus, each sample consists of a float64 value and a millisecond-precision timestamp.
+Prometheusでは、各サンプルは、1つのfloat64の値と1つのミリ秒精度のタイムスタンプから成る。
 
-### Silence
+### サイレンス（silence）
 
-A silence in the Alertmanager prevents alerts, with labels matching the silence, from
-being included in notifications.
+Alertmanagerのサイレンスは、設定にマッチしたラベルを持つアラートが通知に含まれることを防ぐ。
 
-### Target
+### ターゲット（target）
 
-A target is the definition of an object to scrape. For example, what labels to apply, any authentication required to connect, or other information that defines how the scrape will occur.
+ターゲットは、スクレイプする対象の定義である。 例えば、どんなラベルを適用するか、接続に必要な認証、その他どのようにスクレイプするかを定義する情報である。
 

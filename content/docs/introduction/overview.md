@@ -1,84 +1,68 @@
 ---
-title: Overview
+title: 概要
 sort_rank: 1
 ---
 
-# Overview
+# 概要
 
-## What is Prometheus?
+## Prometheusとは
 
-[Prometheus](https://github.com/prometheus) is an open-source systems
-monitoring and alerting toolkit originally built at
-[SoundCloud](http://soundcloud.com). Since its inception in 2012, many
-companies and organizations have adopted Prometheus, and the project has a very
-active developer and user [community](/community). It is now a standalone open source project
-and maintained independently of any company. To emphasize this, and to clarify
-the project's governance structure, Prometheus joined the
-[Cloud Native Computing Foundation](https://cncf.io/) in 2016
-as the second hosted project, after [Kubernetes](http://kubernetes.io/).
+[Prometheus](https://github.com/prometheus)は、オープンソースのシステム監視およびアラートのツールキットであり、もともとSoundCloudで開発されていた。
+2012年の発足以来、多くの企業と組織がPrometheusを採用し、プロジェクトは活発な開発者と[ユーザーコミュニティ](https://prometheus.io/community/)を擁している。
+現在は独立したオープンソースプロジェクトであり、いかなる企業からも独立して保守されている。
+このことを強調するため、またプロジェクトのガバナンス構造を明確にするために、Prometheusは、[Cloud Native Computing Foundation](https://cncf.io/)に2016年に、[Kubernetes](http://kubernetes.io/)に次ぐ2番目のプロジェクトとして参加した。
 
-For more elaborate overviews of Prometheus, see the resources linked from the
-[media](/docs/introduction/media/) section.
+さらに詳しいPrometheusの概要は、[メディア](/docs/introduction/media/)からリンクされているリソースを参照すること。
 
-### Features
+### 機能
 
-Prometheus's main features are:
+Prometheusの主な機能は、
 
-* a multi-dimensional [data model](/docs/concepts/data_model/) with time series data identified by metric name and key/value pairs
-* PromQL, a [flexible query language](/docs/prometheus/latest/querying/basics/)
-  to leverage this dimensionality
-* no reliance on distributed storage; single server nodes are autonomous
-* time series collection happens via a pull model over HTTP
-* [pushing time series](/docs/instrumenting/pushing/) is supported via an intermediary gateway
-* targets are discovered via service discovery or static configuration
-* multiple modes of graphing and dashboarding support
+* メトリック名とキーバリューで特定される時系列データによる多次元[データモデル](/docs/concepts/data_model/)
+* PromQL 上記の多次元データから最大限の価値を引き出す[柔軟なクエリ言語](/docs/prometheus/latest/querying/basics/)
+* 分散ストレージに依存していないこと。単一のサーバーノードが自律している
+* HTTPを通したpullモデルによる時系列データの収集
+* 中間ゲートウェイによる[時系列データpush](/docs/instrumenting/pushing/)のサポート
+* サービスディスカバリーと静的な設定による監視対象の検出
+* 複数の方式でのグラフ化とダッシュボードのサポート
 
-### Components
+### コンポーネント
 
-The Prometheus ecosystem consists of multiple components, many of which are
-optional:
+Prometheusのエコシステムは、複数のコンポーネントからなり、その多くは必須ではない
 
-* the main [Prometheus server](https://github.com/prometheus/prometheus) which scrapes and stores time series data
-* [client libraries](/docs/instrumenting/clientlibs/) for instrumenting application code
-* a [push gateway](https://github.com/prometheus/pushgateway) for supporting short-lived jobs
-* special-purpose [exporters](/docs/instrumenting/exporters/) for services like HAProxy, StatsD, Graphite, etc.
-* an [alertmanager](https://github.com/prometheus/alertmanager) to handle alerts
-* various support tools
+* 中心となる[Prometheusサーバー](https://github.com/prometheus/prometheus)、時系列データを取得・保存する
+* アプリケーションコードをinstrumentするための[クライアントライブラリ](/docs/instrumenting/clientlibs/)
+* 短命のジョブをサポートするための[Pushgateway](https://github.com/prometheus/pushgateway)
+* HAProxyやStatsD、Graphiteなどのサービスのための特殊用途の[exporter](/docs/instrumenting/exporters/)
+* アラートを処理する[alertmanager](https://github.com/prometheus/alertmanager)
+* 各種サポートツール
 
-Most Prometheus components are written in [Go](https://golang.org/), making
-them easy to build and deploy as static binaries.
+ほとんどのPrometheusのコンポーネントは、静的なバイナリとして簡単にビルドとデプロイできるように、[Go](https://golang.org/)で書かれている
 
-### Architecture
+### アーキテクチャー
 
-This diagram illustrates the architecture of Prometheus and some of
-its ecosystem components:
+Prometheusとそのエコシステムのコンポーネントのアーキテクチャーを以下の図に示す
 
 ![Prometheus architecture](/assets/architecture.png)
 
-Prometheus scrapes metrics from instrumented jobs, either directly or via an
-intermediary push gateway for short-lived jobs. It stores all scraped samples
-locally and runs rules over this data to either aggregate and record new time
-series from existing data or generate alerts. [Grafana](https://grafana.com/) or
-other API consumers can be used to visualize the collected data.
+Prometheusは、instrumentされたジョブから、直接（または短命のジョブに対してはPushgateway経由で）メトリクスを取得する。
+取得したサンプルは全てローカルに保存され、集約したり、新しい時系列データを記録したり、アラートを生成するために、このデータに対してルールが実行される。
+収集されたデータを可視化するために[Grafana](https://grafana.com/)や他のAPIコンシューマーを使うことが出来る。
 
-## When does it fit?
+## Prometheusが適しているのは
 
-Prometheus works well for recording any purely numeric time series. It fits
-both machine-centric monitoring as well as monitoring of highly dynamic
-service-oriented architectures. In a world of microservices, its support for
-multi-dimensional data collection and querying is a particular strength.
+Prometheusは、数値のみから成るあらゆる時系列データの記録に対してうまく機能する。
+マシン中心の監視にもサービス指向の動的なアーキテクチャの監視にも適している。
+マイクロサービスの世界では、多次元データの収集とクエリのサポートが特に強みである。
 
-Prometheus is designed for reliability, to be the system you go to
-during an outage to allow you to quickly diagnose problems. Each Prometheus
-server is standalone, not depending on network storage or other remote services.
-You can rely on it when other parts of your infrastructure are broken, and
-you do not need to setup extensive infrastructure to use it.
+Prometheusは、障害時に素早く問題を診断できるようなシステムとなるべく、信頼性に重きを置いて設計されている。
+各Prometheusサーバーは、スタンドアローンで、ネットワークストレージやリモートのサービスに依存していない。
+インフラの他の部分に障害があっても利用可能であり、Prometheusを利用するために大規模なインフラを用意する必要がない。
 
-## When does it not fit?
 
-Prometheus values reliability. You can always view what statistics are
-available about your system, even under failure conditions. If you need 100%
-accuracy, such as for per-request billing, Prometheus is not a good choice as
-the collected data will likely not be detailed and complete enough. In such a
-case you would be best off using some other system to collect and analyze the
-data for billing, and Prometheus for the rest of your monitoring.
+## Prometheusが適していないのは
+
+Prometheusは信頼性に重きを置いている。システムについての統計を、いつでも、障害がおきている状況でも、見ることができる。
+もし、リクエストごとの請求金額などのために、100%の精度が必要ならば、Prometheusは良い選択ではない。
+なぜなら、収集されたデータはおそらく十分に詳細かつ完全ではないからである。
+そのような場合には、請求額データの収集と分析には他のシステムを使い、残りの監視にPrometheusを使うのが良い。

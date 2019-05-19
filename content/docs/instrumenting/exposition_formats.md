@@ -1,76 +1,65 @@
 ---
-title: Exposition formats
+title: 出力フォーマット
 sort_rank: 6
 ---
 
-# Exposition formats
+# 出力フォーマット
 
-Metrics can be exposed to Prometheus using a simple [text-based](#text-based-format)
-exposition format. There's a variety of [client libraries](/docs/instrumenting/clientlibs/)
-that implement this format for you. If your preferred language doesn't have a client
-library you can [create your own](/docs/instrumenting/writing_clientlibs/).
+メトリクスは、単純な[テキストベース](#text-based-format)の出力フォーマットを利用してPrometheusに出力することができる。
+このフォーマットを実装した様々なクライアントライブラリがある。
+好みの言語にクライアントライブラリがなければ、[自分で実装する](/docs/instrumenting/writing_clientlibs/)ことができる。
 
-NOTE: Some earlier versions of Prometheus supported an exposition format based on
-[Protocol Buffers](https://developers.google.com/protocol-buffers/) (aka Protobuf) in
-addition to the current text-based format. As of version 2.0, however, Prometheus no
-longer supports the Protobuf-based format. You can read about the reasoning behind
-this change in [this
-document](https://github.com/RichiH/OpenMetrics/blob/master/markdown/protobuf_vs_text.md).
+NOTE: 古いバージョンのPrometheusには、現在のテキストベースのフォーマットに加えて、[Protocol Buffers](https://developers.google.com/protocol-buffers/)（Protobuf）をベースにした出力フォーマットをサポートしているバージョンもあるが、
+バージョン2.0からは、PrometheusはProtobufベースのフォーマットをサポートしない。
+この変更の背後にある理由については、[このドキュメント](https://github.com/RichiH/OpenMetrics/blob/master/markdown/protobuf_vs_text.md)で読むことができる。
 
-## Text-based format
+## テキストベースのフォーマット
 
-As of Prometheus version 2.0, all processes that expose metrics to Prometheus need to use
-a text-based format. In this section you can find some [basic information](#basic-info)
-about this format as well as a more [detailed breakdown](#text-format-details) of the
-format.
+Prometheusバージョン2.0から、Prometheusにメトリクスを出力する全てのプロセスは、テキストベースのフォーマットを利用しなければならない。
+ここでは、[テキストフォーマット詳細](#テキストフォーマット詳細)に加えて、このフォーマットの[基本情報](#基本情報)を示す。
 
-### Basic info
+### 基本情報
 
-| Aspect | Description |
+| 項目 | 説明 |
 |--------|-------------|
-| **Inception** | April 2014  |
-| **Supported in** |  Prometheus version `>=0.4.0` |
-| **Transmission** | HTTP |
-| **Encoding** | UTF-8, `\n` line endings |
-| **HTTP `Content-Type`** | `text/plain; version=0.0.4` (A missing `version` value will lead to a fall-back to the most recent text format version.) |
+| **策定時期** | April 2014  |
+| **サポートバージョン** |  Prometheus version `>=0.4.0` |
+| **送信方法** | HTTP |
+| **エンコーディング** | UTF-8, 改行コード `\n` |
+| **HTTP `Content-Type`** | `text/plain; version=0.0.4` (`version`の値がないと、最新のテキストフォーマットのバージョンで代替される) |
 | **Optional HTTP `Content-Encoding`** | `gzip` |
-| **Advantages** | <ul><li>Human-readable</li><li>Easy to assemble, especially for minimalistic cases (no nesting required)</li><li>Readable line by line (with the exception of type hints and docstrings)</li></ul> |
-| **Limitations** | <ul><li>Verbose</li><li>Types and docstrings not integral part of the syntax, meaning little-to-nonexistent metric contract validation</li><li>Parsing cost</li></ul>|
-| **Supported metric primitives** | <ul><li>Counter</li><li>Gauge</li><li>Histogram</li><li>Summary</li><li>Untyped</li></ul> |
+| **利点** | <ul><li>人間の可読性</li><li>組み立てるのが容易、特に最小のケース（入れ子が不要）</li><li>行ごとに読む事ができる（型のヒントやdocstringは除く）</li></ul> |
+| **制約** | <ul><li>冗長</li><li>型とdocstringが構文の必須要素ではない。したがって、メトリックの契約の検証が少ししか（あるいは全く）ない</li><li>パースのコスト</li></ul>|
+| **サポートしているメトリック型** | <ul><li>Counter</li><li>Gauge</li><li>Histogram</li><li>Summary</li><li>Untyped</li></ul> |
 
-### Text format details
+### テキストフォーマット詳細
 
-Prometheus' text-based format is line oriented. Lines are separated by a line
-feed character (`\n`). The last line must end with a line feed character.
-Empty lines are ignored.
+Prometheusのテキストベースフォーマットは、行指向である。
+行は、line feed文字（`\n`）で分割される。
+最後の行は、line feed文字で終わらなければならない。
+空行は無視される。
 
-#### Line format
+#### 行のフォーマット
 
-Within a line, tokens can be separated by any number of blanks and/or tabs (and
-must be separated by at least one if they would otherwise merge with the previous
-token). Leading and trailing whitespace is ignored.
+行の中で、トークンは、任意の数の空白やタブで分割することができる（最低1つ以上、さもなければ直前のトークンにまとめられる）。
+最初や最後のホワイトスペースは無視される。
 
-#### Comments, help text, and type information
+#### コメント、ヘルプテキスト、型情報
 
-Lines with a `#` as the first non-whitespace character are comments. They are
-ignored unless the first token after `#` is either `HELP` or `TYPE`. Those
-lines are treated as follows: If the token is `HELP`, at least one more token
-is expected, which is the metric name. All remaining tokens are considered the
-docstring for that metric name. `HELP` lines may contain any sequence of UTF-8
-characters (after the metric name), but the backslash and the line feed
-characters have to be escaped as `\\` and `\n`, respectively. Only one `HELP`
-line may exist for any given metric name.
+最初のホワイトスペース以外の文字が`#`の行は、コメントである。
+それらは、`#`の直後のトークンが、`HELP`や`TYPE`でなければ、無視される。
+そうである行は、次のように処理される。
+そのトークンが`HELP`なら、少なくとももう1つのトークン（メトリック名）が期待されている。
+残り全てのトークンは、そのメトリック名に対するdocstringと見なされる。
+`HELP`行は、メトリック名の後ろに、UTF-8の文字の任意の並びを含んで良いが、バックスラッシュとline feedは、それぞれ`\\`や`\n`のようにエスケープする必要がある。
+どのメトリック名に対しても、1つの`HELP`行だけ存在して良い。
 
-If the token is `TYPE`, exactly two more tokens are expected. The first is the
-metric name, and the second is either `counter`, `gauge`, `histogram`,
-`summary`, or `untyped`, defining the type for the metric of that name. Only
-one `TYPE` line may exist for a given metric name. The `TYPE` line for a
-metric name must appear before the first sample is reported for that metric
-name. If there is no `TYPE` line for a metric name, the type is set to
-`untyped`.
+そのトークンが`TYPE`なら、ちょうど2つのトークンが期待されている。
+1つ目がメトリック名、2つ目は`ounter`、`gauge`、`histogram`、`summary`、`untyped`のいずれかでそのメトリック名の型を定義する。
+`TYPE`行は、そのメトリック名が出力される最初のサンプルより前に現れなければならない。
+もし、メトリック名に対して`TYPE`行がなければ、その型は`untyped`にセットされる。
 
-The remaining lines describe samples (one per line) using the following syntax
-([EBNF](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)):
+残りの行は、以下の構文（[EBNF](https://ja.wikipedia.org/wiki/EBNF)）に従って、１行につ1サンプルで、サンプルを記述する。
 
 ```
 metric_name [
@@ -78,40 +67,36 @@ metric_name [
 ] value [ timestamp ]
 ```
 
-In the sample syntax:
+サンプル行の構文は、以下の通り。
 
-*  `metric_name` and `label_name` carry the usual Prometheus expression language restrictions.
-* `label_value` can be any sequence of UTF-8 characters, but the backslash (`\`, double-quote (`"`}, and line feed (`\n`) characters have to be escaped as `\\`, `\"`, and `\n`, respectively.
-* `value` is a float represented as required by Go's [`ParseFloat()`](https://golang.org/pkg/strconv/#ParseFloat) function. In addition to standard numerical values, `Nan`, `+Inf`, and `-Inf` are valid values representing not a number, positive infinity, and negative infinity, respectively.
-* The `timestamp` is an `int64` (milliseconds since epoch, i.e. 1970-01-01 00:00:00 UTC, excluding leap seconds), represented as required by Go's [`ParseInt()`](https://golang.org/pkg/strconv/#ParseInt) function.
+* `metric_name`と`label_name`は、通常のPrometheusの制限に従う
+* `label_value`は、UTF-8文字の任意の並びで良いが、バックスラッシュ、ダブルクオート、line feed文字は、それぞれ`\\`、`\"`、`\n`のようにエスケープしなければならない
+* `value`は、Goの関数`ParseFloat()`の仕様に従ったfloatである。標準的な数値に加えて、`Nan`、`+Inf`、`-Inf`が有効な値で、それぞれ数値でない、正の無限、負の無限を表す
+* `timestamp`は、Goの関数[`ParseInt()`](https://golang.org/pkg/strconv/#ParseInt)の仕様に従ったint64（エポック、つまり1970-01-01 00:00:00 UTCからの、うるう秒を除く、ミリ秒）である
 
-#### Grouping and sorting
+#### グループ化とソート
 
-All lines for a given metric must be provided as one single group, with
-the optional `HELP` and `TYPE` lines first (in no particular order). Beyond
-that, reproducible sorting in repeated expositions is preferred but not
-required, i.e. do not sort if the computational cost is prohibitive.
+あるメトリックのための全ての行は、オプションで`HELP`と`TYPE`の行を伴って、1つのグループとして提供されていなければならない。
+さらに、繰り返して出力される際に、再現性のある並び順になっていることが望ましいが、必須ではない。言い換えると、計算コストが高価な場合にはソートしないこと。
 
-Each line must have a unique combination of a metric name and labels. Otherwise,
-the ingestion behavior is undefined.
+各行は、メトリック名とラベルのユニークな組み合わせになっていなければならない。
+そうでなければ、それを取り込む際の振る舞いは定義されていない。
 
-#### Histograms and summaries
+#### ヒストグラムとサマリー
 
-The `histogram` and `summary` types are difficult to represent in the text
-format. The following conventions apply:
+ヒストグラムとサマリーはテキストフォーマットで表すのが難しい。
+以下の慣例を適用する。
 
-* The sample sum for a summary or histogram named `x` is given as a separate sample named `x_sum`.
-* The sample count for a summary or histogram named `x` is given as a separate sample named `x_count`.
-* Each quantile of a summary named `x` is given as a separate sample line with the same name `x` and a label `{quantile="y"}`.
-* Each bucket count of a histogram named `x` is given as a separate sample line with the name `x_bucket` and a label `{le="y"}` (where `y` is the upper bound of the bucket).
-* A histogram _must_ have a bucket with `{le="+Inf"}`. Its value _must_ be identical to the value of `x_count`.
-* The buckets of a histogram and the quantiles of a summary must appear in increasing numerical order of their label values (for the `le` or the `quantile` label, respectively).
+* `x`という名前のサマリーやヒストグラムのサンプルの合計は、`x_sum`という名前の別のサンプルとして与えられる
+* `x`という名前のサマリーやヒストグラムのサンプルの個数は、`x_count`という名前の別のサンプルとして与えられる
+* `x`という名前のサマリーの分位数は、同じ名前`x`とラベル`{quantile="y"}`を持つ別のサンプル行として与えられる
+- `x`という名前のバケットのカウントは、名前`x_bucket`とラベル`{le="y"}`（`y`はバケットの上限）を持つ別のサンプル行とし*与えられる
+* ヒストグラムは、`{le="+Inf"}`のバケットを持たなければならない。その値は`x_count`の値と等しくなければならない
+* ヒストグラムのバケットとサマリーの分位数は、それぞれ`le`、`quantile`に対する値が数値的に増加する順で現れなければならな*
 
-### Text format example
+### テキストフォーマット例
 
-Below is an example of a full-fledged Prometheus metric exposition, including
-comments, `HELP` and `TYPE` expressions, a histogram, a summary, character
-escaping examples, and more.
+コメント、`HELP`、`TYPE`、ヒストグラム、サマリー、エスケープなど、一通り揃ったPrometheusのメトリクスの出力を以下に示す。
 
 ```
 # HELP http_requests_total The total number of HTTP requests.
@@ -152,8 +137,6 @@ rpc_duration_seconds_sum 1.7560473e+07
 rpc_duration_seconds_count 2693
 ```
 
-## Historical versions
+## 過去のバージョン
 
-For details on historical format versions, see the legacy
-[Client Data Exposition Format](https://docs.google.com/document/d/1ZjyKiKxZV83VI9ZKAXRGKaUKK2BIWCT7oiGBKDBpjEY/edit?usp=sharing)
-document.
+過去のフォーマットのバージョンの詳細は、[Client Data Exposition Format](https://docs.google.com/document/d/1ZjyKiKxZV83VI9ZKAXRGKaUKK2BIWCT7oiGBKDBpjEY/edit?usp=sharing)を参照すること。

@@ -1,24 +1,22 @@
 ---
-title: Client libraries
+title: クライアントライブラリ
 sort_rank: 1
 ---
 
-# Client libraries
+# クライアントライブラリ
 
-Before you can monitor your services, you need to add instrumentation to their
-code via one of the Prometheus client libraries. These implement the Prometheus
-[metric types](/docs/concepts/metric_types/).
+自分のサービスの監視をするには、Prometheusクライアントライブラリのどれかを利用して、そのコードにメトリクス組み込みを追加する必要がある。
+それらのライブラリは、Prometheusの[メトリック型](/docs/concepts/metric_types/)を実装している。
 
-Choose a Prometheus client library that matches the language in which your
-application is written. This lets you define and expose internal metrics via an
-HTTP endpoint on your application’s instance:
+アプリケーションが書かれている言語に合わせてPrometheusクライアントライブラリを選択すること。
+これによって、内部メトリクスを定義し、アプリケーションのインスタンス上でHTTPのエンドポイントで出力出来るようになる。
 
 * [Go](https://github.com/prometheus/client_golang)
 * [Java or Scala](https://github.com/prometheus/client_java)
 * [Python](https://github.com/prometheus/client_python)
 * [Ruby](https://github.com/prometheus/client_ruby)
 
-Unofficial third-party client libraries:
+非公式のサードパーティのクライアントライブラリ
 
 * [Bash](https://github.com/aecolley/client_bash)
 * [C++](https://github.com/jupp0r/prometheus-cpp)
@@ -34,16 +32,11 @@ Unofficial third-party client libraries:
 * [PHP](https://github.com/Jimdo/prometheus_client_php)
 * [Rust](https://github.com/pingcap/rust-prometheus)
 
-When Prometheus scrapes your instance's HTTP endpoint, the client library
-sends the current state of all tracked metrics to the server.
+クライアントライブラリは、PrometheusがHTTPのエンドポイントをscrapeすると、追跡中の全てのメトリクスのその時点の状態をPrometheusに送信する。
 
-If no client library is available for your language, or you want to avoid
-dependencies, you may also implement one of the supported [exposition
-formats](/docs/instrumenting/exposition_formats/) yourself to expose metrics.
+もし利用可能なクライアントライブラリがなかったり、依存を避けたいのであれば、
+自分で[出力フォーマット](/docs/instrumenting/exposition_formats/)の一つを実装してメトリクスを出力することも可能である。
 
-When implementing a new Prometheus client library, please follow the
-[guidelines on writing client libraries](/docs/instrumenting/writing_clientlibs).
-Note that this document is still a work in progress. Please also consider
-consulting the [development mailing list](https://groups.google.com/forum/#!forum/prometheus-developers).
-We are happy to give advice on how to make your library as useful and
-consistent as possible.
+新しいPrometheusクライアントライブラリを実装する際は、[クライアントの書き方のガイドライン](https://prometheus.io/docs/instrumenting/writing_clientlibs)に従ってください。
+[開発メーリングリスト](https://groups.google.com/forum/#!forum/prometheus-developers)に相談することも検討して下さい。
+どのようにしてあなたのライブラリを可能な限り便利で安定にするかアドバイス出来れば幸いです。

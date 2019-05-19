@@ -1,73 +1,64 @@
 ---
-title: Configuration
+title: 設定
 sort_rank: 3
 nav_icon: sliders
 ---
 
-# Configuration
+# 設定
 
-[Alertmanager](https://github.com/prometheus/alertmanager) is configured via
-command-line flags and a configuration file.
-While the command-line flags configure immutable system parameters, the
-configuration file defines inhibition rules, notification routing and
-notification receivers.
+[Alertmanager](https://github.com/prometheus/alertmanager)は、コマンドラインフラグと設定ファイルを通して設定される。
+コマンドラインフラグは、不変のシステムパラメーターを設定し、設定ファイルは、inhibitionルール、通知ルーティング、通知レシーバーを定義する。
 
-The [visual editor](/webtools/alerting/routing-tree-editor) can assist in
-building routing trees.
+[visual editor](/webtools/alerting/routing-tree-editor)が、ルーティングツリーの構築の補助となる。
 
-To view all available command-line flags, run `alertmanager -h`.
+利用可能な全てのコマンドラインフラグを見るには、`alertmanager -h`を実行する。
 
-Alertmanager can reload its configuration at runtime. If the new configuration
-is not well-formed, the changes will not be applied and an error is logged.
-A configuration reload is triggered by sending a `SIGHUP` to the process or
-sending a HTTP POST request to the `/-/reload` endpoint.
+Alertmanagerは、実行時に設定を読み込み直すことが出来る。
+もし、新しい設定が正しい形式でなければ、変更は適用されず、エラーがログされる。
+設定を読み込み直させるには、AlertmanagerプロセスにSIGHUPを送るか、エンドポイント`/-/reload`にHTTP POSTリクエストを送る。
 
-## Configuration file
+## 設定ファイル
 
-To specify which configuration file to load, use the `--config.file` flag.
+どの設定ファイルを読み込むか指定するには、フラグ`--config.file`を使う。
 
 ```bash
 ./alertmanager --config.file=simple.yml
 ```
 
-The file is written in the [YAML format](http://en.wikipedia.org/wiki/YAML),
-defined by the scheme described below.
-Brackets indicate that a parameter is optional. For non-list parameters the
-value is set to the specified default.
+設定ファイルは、以下に記すスキームで定義された[YAML形式](http://en.wikipedia.org/wiki/YAML)で書かれる。 ブラケットは、パラメーターがオプションであることを表す。 リストでないパラメーターは、指定されたデフォルト値にセットされる。
 
-Generic placeholders are defined as follows:
+一般的なプレースホルダーは以下の通り。
 
-* `<duration>`: a duration matching the regular expression `[0-9]+(ms|[smhdwy])`
-* `<labelname>`: a string matching the regular expression `[a-zA-Z_][a-zA-Z0-9_]*`
-* `<labelvalue>`: a string of unicode characters
-* `<filepath>`: a valid path in the current working directory
-* `<boolean>`: a boolean that can take the values `true` or `false`
-* `<string>`: a regular string
-* `<secret>`: a regular string that is a secret, such as a password
-* `<tmpl_string>`: a string which is template-expanded before usage
-* `<tmpl_secret>`: a string which is template-expanded before usage that is a secret
+* `<duration>`: 正規表現`[0-9]+(ms|[smhdwy])`にマッチする時間幅
+* `<labelname>`: 正規表現`[a-zA-Z_][a-zA-Z0-9_]*`にマッチする文字列
+* `<labelvalue>`: Unicodeの文字列
+* `<filepath>`: カレントワーキングディレクトリのパス
+* `<boolean>`: 値として`true`または`false`を取ることが出来るブーリアン
+* `<string>`: 文字列
+* `<secret>`: パスワードのような秘密の文字列
+* `<tmpl_string>`: 利用前にテンプレートで展開される文字列
+* `<tmpl_secret>`: 利用前にテンプレートで展開される秘密の文字列
 
-The other placeholders are specified separately.
+そのほかのプレースホルダーは、個別に定義される。
 
 A valid example file can be found [here](https://github.com/prometheus/alertmanager/blob/master/doc/examples/simple.yml).
 
-The global configuration specifies parameters that are valid in all other
-configuration contexts. They also serve as defaults for other configuration
-sections.
+グローバルな設定は、他の全ての部分で有効なパラメーターを指定する。
+これらは、他の部分での設定のデフォルト値にもなる。
 
 ```yaml
 global:
-  # ResolveTimeout is the time after which an alert is declared resolved
-  # if it has not been updated.
+  # ResolveTimeoutは、アラートが更新されていない場合に、
+  # 解消されたと宣言するまでの時間である
   [ resolve_timeout: <duration> | default = 5m ]
 
-  # The default SMTP From header field.
+  # デフォルトのSMTPのFromヘッダー
   [ smtp_from: <tmpl_string> ]
   # The default SMTP smarthost used for sending emails, including port number.
-  # Port number usually is 25, or 587 for SMTP over TLS (sometimes referred to as STARTTLS).
+  # ポート番号は、普通は25で、（時にSTARTTLSと呼ばれる）SMTP over TLSなら587である。
   # Example: smtp.example.org:587
   [ smtp_smarthost: <string> ]
-  # The default hostname to identify to the SMTP server.
+  # SMTPサーバーを特定するためのデフォルトのホスト名
   [ smtp_hello: <string> | default = "localhost" ]
   [ smtp_auth_username: <string> ]
   # SMTP Auth using LOGIN and PLAIN.
@@ -95,8 +86,8 @@ global:
   # The default HTTP client configuration
   [ http_config: <http_config> ]
 
-# Files from which custom notification template definitions are read.
-# The last component may use a wildcard matcher, e.g. 'templates/*.tmpl'.
+# 独自の通知テンプレートの定義が読み込まれるファイル
+# 最後の部分はワイルドカードマッチャーを利用可。例 'templates/*.tmpl'
 templates:
   [ - <filepath> ... ]
 
@@ -114,84 +105,74 @@ inhibit_rules:
 
 ## `<route>`
 
-A route block defines a node in a routing tree and its children. Its optional
-configuration parameters are inherited from its parent node if not set.
+`route`ブロックは、ルーティングツリーの一つのノードおよびその子ノードを定義する。オプションの設定項目は、設定されていなければ、親ノードから引き継ぐ。
 
-Every alert enters the routing tree at the configured top-level route, which
-must match all alerts (i.e. not have any configured matchers).
-It then traverses the child nodes. If `continue` is set to false, it stops
-after the first matching child. If `continue` is true on a matching node, the
-alert will continue matching against subsequent siblings.
-If an alert does not match any children of a node (no matching child nodes, or
-none exist), the alert is handled based on the configuration parameters of the
-current node.
+各アラートは、トップレベルの`route`からルーティングツリーに入り、子ノードをtraverseする。`continue`がfalseの場合、最初にマッチした子ノードの後で停止する。`continue`がマッチしたノードでtrueの場合、アラートは後続のノードに対してもマッチングを継続する。もし、どの子ノードにもマッチしなければ（マッチする子ノードがない場合も子ノード自体がない場合も）、アラートはカレントノードの設定に基づいて処理される。
 
 ```yaml
 [ receiver: <string> ]
-# The labels by which incoming alerts are grouped together. For example,
-# multiple alerts coming in for cluster=A and alertname=LatencyHigh would
-# be batched into a single group.
+# これらのラベルで入ってきたアラートがまとめられる。例えば、cluster=Aと
+# alertname=LatencyHighに対して入ってきた複数のアラートが1つのグループにまとめられる。
 #
-# To aggregate by all possible labels use the special value '...' as the sole label name, for example:
+# あり得るラベル全てでまとめるためには、特殊値'...'を1つのラベル名として使う。
+# 例えば、以下のようにする。
 # group_by: ['...'] 
-# This effectively disables aggregation entirely, passing through all 
-# alerts as-is. This is unlikely to be what you want, unless you have 
-# a very low alert volume or your upstream notification system performs 
-# its own grouping.
+# これは、全てのアラートをそのまま通過させ、実質的に集約を完全に無効にする。
+# アラートの量が非常に少なかったり、上流のシステムがグルーピングをするのでなければ、これは望んでいることではないだろう。
 [ group_by: '[' <labelname>, ... ']' ]
 
-# Whether an alert should continue matching subsequent sibling nodes.
+# アラートが後続の兄弟ノードとのマッチングを継続すべきかどうか
 [ continue: <boolean> | default = false ]
 
-# A set of equality matchers an alert has to fulfill to match the node.
+# このノードとマッチするためにアラートが満たすべき等値マッチャー集合
 match:
   [ <labelname>: <labelvalue>, ... ]
 
-# A set of regex-matchers an alert has to fulfill to match the node.
+# このノードとマッチするためにアラートが満たすべき正規表現マッチャー集合
 match_re:
   [ <labelname>: <regex>, ... ]
 
-# How long to initially wait to send a notification for a group
-# of alerts. Allows to wait for an inhibiting alert to arrive or collect
-# more initial alerts for the same group. (Usually ~0s to few minutes.)
+# アラートのグループが通知を送信するために最初に待つべき時間の長さ。
+# アラートの抑制が同じグループに初期アラートをより多く集めることができるようになる。
+# 通常は、~0sから数分
 [ group_wait: <duration> | default = 30s ]
 
-# How long to wait before sending a notification about new alerts that
-# are added to a group of alerts for which an initial notification has
-# already been sent. (Usually ~5m or more.)
+# 初期通知が既に送信されたグループに追加された新しいアラート
+# の通知を送信するまでに待つ時間の長さ
+# （通常は、~5mかそれ以上）
 [ group_interval: <duration> | default = 5m ]
 
-# How long to wait before sending a notification again if it has already
-# been sent successfully for an alert. (Usually ~3h or more).
+# 通知が既に送信成功している場合、再送信するまでに待つ時間の長さ
+# （通常は、~3hまたはそれ以上）
 [ repeat_interval: <duration> | default = 4h ]
 
-# Zero or more child routes.
+# 0以上の子ルート
 routes:
   [ - <route> ... ]
 ```
 
-### Example
+### 例
 
 ```yaml
-# The root route with all parameters, which are inherited by the child
-# routes if they are not overwritten.
+# 全てのパラメーターを持つrootルート。これらのパラメーターは、子ルートで
+# 上書きされてなければ、引き継がれる
 route:
   receiver: 'default-receiver'
   group_wait: 30s
   group_interval: 5m
   repeat_interval: 4h
   group_by: [cluster, alertname]
-  # All alerts that do not match the following child routes
-  # will remain at the root node and be dispatched to 'default-receiver'.
+  # 以降の子ルートにマッチしないアラートは全て、rootノードに残り、
+  # 'default-receiver'に送信される
   routes:
-  # All alerts with service=mysql or service=cassandra
-  # are dispatched to the database pager.
+  # service=mysqlまたはservice=cassandraを持つアラートは、
+  # database pagerに送信される
   - receiver: 'database-pager'
     group_wait: 10s
     match_re:
       service: mysql|cassandra
-  # All alerts with the team=frontend label match this sub-route.
-  # They are grouped by product and environment rather than cluster
+  # team=frontendというラベルを持つアラートはこのサブルートにマッチする。
+  # clusterとalertnameではなくproductとenvironmentでまとめられる。
   # and alertname.
   - receiver: 'frontend-pager'
     group_by: [product, environment]
@@ -201,102 +182,94 @@ route:
 
 ## `<inhibit_rule>`
 
-An inhibition rule mutes an alert (target) matching a set of matchers
-when an alert (source) exists that matches another set of matchers.
-Both target and source alerts must have the same label values 
-for the label names in the `equal` list.
+inhibitionルールは、あるマッチャー集合にマッチするアラート（source）があった場合に、別のマッチャー集合にマッチするアラート（target）をミュートする。
+targetとsourceはどちらも、`equal`リストのラベルについて同じラベル値を持っていなければならない。
 
-Semantically, a missing label and a label with an empty value are the same
-thing. Therefore, if all the label names listed in `equal` are missing from
-both the source and target alerts, the inhibition rule will apply.
+存在しないラベルと値が空のラベルは、意味的に同じものである。
+したがって、`equal`に挙げられたラベル名全てがsourceとtargetのアラートどちらにもない場合、そのinhibitionルールは適用される。
 
-To prevent an alert from inhibiting itself, an inhibition rule will never
-inhibit an alert that matches _both_ the target and the source side of the
-rule. However, we recommend to choose target and source matchers in a way that
-alerts never match both sides. It is much easier to reason about and does not
-trigger this special case.
+inhibitionルールは、あるアラートが自分自身を抑制しないように、targetとsourceのどちらの側のルールにもマッチするアラートを抑制することはない。
+しかしながら、アラートがtargetとsourceのマッチャーの両方にマッチしないようにマッチャーを選ぶようにすることを推奨する。
+そう設定した方がはるかに分かりやすいし、この特殊ケースが起きなくなる。
 
 ```yaml
-# Matchers that have to be fulfilled in the alerts to be muted.
+# ミュートすべきアラートが満たすべきマッチャー
 target_match:
   [ <labelname>: <labelvalue>, ... ]
 target_match_re:
   [ <labelname>: <regex>, ... ]
 
-# Matchers for which one or more alerts have to exist for the
-# inhibition to take effect.
+# inhibitionが効果を持つために存在すべきアラートに対するマッチャー
 source_match:
   [ <labelname>: <labelvalue>, ... ]
 source_match_re:
   [ <labelname>: <regex>, ... ]
 
-# Labels that must have an equal value in the source and target
-# alert for the inhibition to take effect.
+# inhibitionが効果を持つために、sourceとtargetのアラート両方で同じ値であるべきラベル
 [ equal: '[' <labelname>, ... ']' ]
 
 ```
 
 ## `<http_config>`
 
-A `http_config` allows configuring the HTTP client that the receiver uses to
-communicate with HTTP-based API services.
+`http_config`によって、レシーバーがHTTPベースのAPIサービスと通信するために使うHTTPクライアントを設定できる。
 
 ```yaml
-# Note that `basic_auth`, `bearer_token` and `bearer_token_file` options are
-# mutually exclusive.
+# `basic_auth`、`bearer_token`、`bearer_token_file`は相互排他的であることに注意。
 
-# Sets the `Authorization` header with the configured username and password.
-# password and password_file are mutually exclusive.
+# 設定されたusernameとpasswordでscrapeのリクエストの`Authorization`ヘッダをセットする。
+# passwordとpassword_fileは相互排他的である。
 basic_auth:
   [ username: <string> ]
   [ password: <secret> ]
   [ password_file: <string> ]
 
-# Sets the `Authorization` header with the configured bearer token.
+# 設定された署名なしトークン (Bearer Token)でリクエストの`Authorization`ヘッダをセットする。
 [ bearer_token: <secret> ]
 
-# Sets the `Authorization` header with the bearer token read from the configured file.
+# 設定ファイルから読み込んだ署名なしトークン (Bearer Token)でリクエストの`Authorization`
+# ヘッダをセットする。
 [ bearer_token_file: <filepath> ]
 
-# Configures the TLS settings.
+# TLSの設定をする
 tls_config:
   [ <tls_config> ]
 
-# Optional proxy URL.
+# プロキシURL（オプション）
 [ proxy_url: <string> ]
 ```
 
 ## `<tls_config>`
 
-A `tls_config` allows configuring TLS connections.
+`tls_config`によって、TLS接続の設定ができる。
 
 ```yaml
-# CA certificate to validate the server certificate with.
+# APIサーバーを証明するためのCA証明書
 [ ca_file: <filepath> ]
 
-# Certificate and key files for client cert authentication to the server.
+# クライアント証明書を認証するための証明書と鍵ファイル
 [ cert_file: <filepath> ]
 [ key_file: <filepath> ]
 
-# ServerName extension to indicate the name of the server.
-# http://tools.ietf.org/html/rfc4366#section-3.1
+# Server Name Indicationのためのサーバー名
+# https://tools.ietf.org/html/rfc4366#section-3.1
 [ server_name: <string> ]
 
-# Disable validation of the server certificate.
+# サーバー証明書の検証の無効化
 [ insecure_skip_verify: <boolean> | default = false]
 ```
 
 ## `<receiver>`
 
-Receiver is a named configuration of one or more notification integrations.
+receiverは、1つ以上の通知連携の名前付きの設定である。
 
-__We're not actively adding new receivers, we recommend implementing custom notification integrations via the [webhook](/docs/alerting/configuration/#webhook_config) receiver.__
+__新しいレシーバーは積極的に追加されていないので、独自の通知連携を[webhook](/docs/alerting/configuration/#webhook_config)レシーバーで実装することを推奨する。__
 
 ```yaml
-# The unique name of the receiver.
+# ユニークなレシーバーの名前
 name: <string>
 
-# Configurations for several notification integrations.
+# 通知連携の設定
 email_configs:
   [ - <email_config>, ... ]
 hipchat_configs:
@@ -391,35 +364,33 @@ room_id: <tmpl_string>
 
 ## `<pagerduty_config>`
 
-PagerDuty notifications are sent via the [PagerDuty API](https://developer.pagerduty.com/documentation/integration/events).
-PagerDuty provides documentation on how to integrate [here](https://www.pagerduty.com/docs/guides/prometheus-integration-guide/).
+PagerDutyへの通知は、[PagerDuty API](https://developer.pagerduty.com/documentation/integration/events)を通して送信される。 PagerDutyは、連携の仕方のドキュメントを[ここ](https://www.pagerduty.com/docs/guides/prometheus-integration-guide/)で提供している。
 
 ```yaml
-# Whether or not to notify about resolved alerts.
+# 解決した(resolved)アラートを通知するかどうか
 [ send_resolved: <boolean> | default = true ]
 
-# The following two options are mutually exclusive.
-# The PagerDuty integration key (when using PagerDuty integration type `Events API v2`).
+# 次の2つのオプションは、相互排他的である。
+# PagerDutyのインテグレーションキー（PagerDutyのインテグレーションタイプ`Events API v2`を利用する場合）
 routing_key: <tmpl_secret>
-# The PagerDuty integration key (when using PagerDuty integration type `Prometheus`).
+# PagerDutyのインテグレーションキー（PagerDutyのインテグレーションタイプ`Prometheus`を利用する場合）
 service_key: <tmpl_secret>
 
-# The URL to send API requests to
+# APIリクエストの送信先のURL
 [ url: <string> | default = global.pagerduty_url ]
 
-# The client identification of the Alertmanager.
+# Alertmanagerのクライアントを識別するもの
 [ client:  <tmpl_string> | default = '{{ template "pagerduty.default.client" . }}' ]
-# A backlink to the sender of the notification.
+# 通知の送信元へのバックリンク
 [ client_url:  <tmpl_string> | default = '{{ template "pagerduty.default.clientURL" . }}' ]
 
-# A description of the incident.
+# インシデントの記述
 [ description: <tmpl_string> | default = '{{ template "pagerduty.default.description" .}}' ]
 
-# Severity of the incident.
+# インシデントの深刻度
 [ severity: <tmpl_string> | default = 'error' ]
 
-# A set of arbitrary key/value pairs that provide further detail
-# about the incident.
+# さらにインシデントの詳細を与えるための任意のキー/バリューのペアの集合
 [ details: { <string>: <tmpl_string>, ... } | default = {
   firing:       '{{ template "pagerduty.default.instances" .Alerts.Firing }}'
   resolved:     '{{ template "pagerduty.default.instances" .Alerts.Resolved }}'
@@ -427,21 +398,21 @@ service_key: <tmpl_secret>
   num_resolved: '{{ .Alerts.Resolved | len }}'
 } ]
 
-# Images to attach to the incident.
+# インシデントに添付する画像
 images:
   [ <image_config> ... ]
 
-# Links to attach to the incident.
+# インシデントに添付するリンク
 links:
   [ <link_config> ... ]
 
-# The HTTP client's configuration.
+# HTTPクライアントの設定
 [ http_config: <http_config> | default = global.http_config ]
 ```
 
 ### `<image_config>`
 
-The fields are documented in the [PagerDuty API documentation](https://v2.developer.pagerduty.com/v2/docs/send-an-event-events-api-v2#section-the-images-property).
+これらのフィールドは、[PagerDuty API documentation](https://v2.developer.pagerduty.com/v2/docs/send-an-event-events-api-v2#section-the-images-property)でドキュメント化されている。
 
 ```yaml
 source: <tmpl_string>
@@ -451,7 +422,7 @@ text: <tmpl_string>
 
 ### `<link_config>`
 
-The fields are documented in the [PagerDuty API documentation](https://v2.developer.pagerduty.com/v2/docs/send-an-event-events-api-v2#section-the-links-property).
+これらのフィールドは、[PagerDuty API documentation](https://v2.developer.pagerduty.com/v2/docs/send-an-event-events-api-v2#section-the-links-property)でドキュメント化されている。
 
 ```yaml
 href: <tmpl_string>
@@ -498,21 +469,20 @@ token: <secret>
 
 ## `<slack_config>`
 
-Slack notifications are sent via [Slack
-webhooks](https://api.slack.com/incoming-webhooks). The notification contains
-an [attachment](https://api.slack.com/docs/message-attachments).
+Slack通知は、Slackの[Webhook](https://api.slack.com/incoming-webhooks)を通して送信される。
+この通知には[attachment](https://api.slack.com/docs/message-attachments)が含まれる。
 
 ```yaml
-# Whether or not to notify about resolved alerts.
+# 解消された(resolved)アラートについて通知するかどうか
 [ send_resolved: <boolean> | default = false ]
 
-# The Slack webhook URL.
+# Slack webhookのURL
 [ api_url: <secret> | default = global.slack_api_url ]
 
-# The channel or user to send notifications to.
+# 通知の送信先のチャネルまたはユーザー
 channel: <tmpl_string>
 
-# API request data as defined by the Slack webhook API.
+# Slack webhook APIで定義されているAPIリクエストデータ
 [ icon_emoji: <tmpl_string> ]
 [ icon_url: <tmpl_string> ]
 [ link_names: <boolean> | default = false ]
@@ -540,7 +510,7 @@ fields:
 
 ### `<action_config>`
 
-The fields are documented in the [Slack API documentation](https://api.slack.com/docs/message-attachments#action_fields).
+このフィールドは、[Slack APIドキュメント](https://api.slack.com/docs/message-attachments#action_fields)に記載されている。
 
 ```yaml
 type: <tmpl_string>
@@ -551,7 +521,7 @@ url: <tmpl_string>
 
 ### `<field_config>`
 
-The fields are documented in the [Slack API documentation](https://api.slack.com/docs/message-attachments#fields).
+このフィールドは、[Slack APIドキュメント](https://api.slack.com/docs/message-attachments#fields)に記載されている。
 
 ```yaml
 title: <tmpl_string>
@@ -637,33 +607,31 @@ routing_key: <tmpl_string>
 
 ## `<webhook_config>`
 
-The webhook receiver allows configuring a generic receiver.
+webhookレシーバーによって、一般的なレシーバーを設定できる。
 
 ```yaml
-# Whether or not to notify about resolved alerts.
+# 解消された(resolved)アラートについて通知するかどうか
 [ send_resolved: <boolean> | default = true ]
 
-# The endpoint to send HTTP POST requests to.
+# HTTP POSTリクエストを送るエンドポイント
 url: <string>
 
-# The HTTP client's configuration.
+# HTTPクライアントの設定
 [ http_config: <http_config> | default = global.http_config ]
 ```
 
-The Alertmanager
-will send HTTP POST requests in the following JSON format to the configured
-endpoint:
+Alertmanagerは、HTTP POSTリクエストを以下のJSONのフォーマットで、設定されたエンドポイントに送信する。
 
 ```
 {
   "version": "4",
-  "groupKey": <string>,    // key identifying the group of alerts (e.g. to deduplicate)
+  "groupKey": <string>,    // アラートのグループを識別するキー（重複削除のためのもの）
   "status": "<resolved|firing>",
   "receiver": <string>,
   "groupLabels": <object>,
   "commonLabels": <object>,
   "commonAnnotations": <object>,
-  "externalURL": <string>,  // backlink to the Alertmanager.
+  "externalURL": <string>,  // Alertmanagerへのバックリンク
   "alerts": [
     {
       "status": "<resolved|firing>",
@@ -671,16 +639,14 @@ endpoint:
       "annotations": <object>,
       "startsAt": "<rfc3339>",
       "endsAt": "<rfc3339>",
-      "generatorURL": <string> // identifies the entity that caused the alert
+      "generatorURL": <string> // アラートを起こした実体を特定する
     },
     ...
   ]
 }
 ```
 
-There is a list of
-[integrations](/docs/operating/integrations/#alertmanager-webhook-receiver) with
-this feature.
+この機能を利用した[連携のリスト](/docs/operating/integrations/#alertmanager-webhook-receiver)がある。
 
 ## `<wechat_config>`
 

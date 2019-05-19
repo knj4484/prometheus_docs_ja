@@ -1,60 +1,54 @@
 ---
-title: Data model
+title: データモデル
 sort_rank: 1
 ---
 
-# Data model
+# データモデル
 
-Prometheus fundamentally stores all data as [_time
-series_](http://en.wikipedia.org/wiki/Time_series): streams of timestamped
-values belonging to the same metric and the same set of labeled dimensions.
-Besides stored time series, Prometheus may generate temporary derived time series
-as the result of queries.
+Prometheusは、根本的に、全てのデータを[_時系列_](https://ja.wikipedia.org/wiki/時系列)（同じメトリックで同じ値を持つラベルの集合に属する一連のタイムスタンプ付きの値）として保存する。
+Prometheusは、クエリの結果として、一時的に派生した時系列を生成することもある。
 
-## Metric names and labels
+## メトリック名とラベル
 
-Every time series is uniquely identified by its _metric name_ and a set of
-_key-value pairs_, also known as _labels_.
+各時系列は、_メトリック名_と_キー・バリューの組み合わせ_（_ラベル_とも言う）の集合により、ユニークに特定される。
 
-The _metric name_ specifies the general feature of a system that is measured
-(e.g. `http_requests_total` - the total number of HTTP requests received). It
-may contain ASCII letters and digits, as well as underscores and colons. It
-must match the regex `[a-zA-Z_:][a-zA-Z0-9_:]*`.
+メトリック名は、システムの測定される一般的な機能(例えば、`http_requests_total` 受信したHTTPリクエスの合計)を特定する。
+メトリック名は、ASCIIの文字と数字およびコロンとアンダースコアを含むことができ、
+正規表現`[a-zA-Z_:][a-zA-Z0-9_:]*`にマッチしなければいけない。
 
-Note: The colons are reserved for user defined recording rules. They should not
-be used by exporters or direct instrumentation.
 
-Labels enable Prometheus's dimensional data model: any given combination of
-labels for the same metric name identifies a particular dimensional
-instantiation of that metric (for example: all HTTP requests that used the
-method `POST` to the `/api/tracks` handler). The query language
-allows filtering and aggregation based on these dimensions. Changing any label
-value, including adding or removing a label, will create a new time series.
+注意: コロンは、ユーザー定義のレコーディングルールのために予約されており、exporterや直接のメトリクス組み込みで利用してはいけない。
 
-Label names may contain ASCII letters, numbers, as well as underscores. They
-must match the regex `[a-zA-Z_][a-zA-Z0-9_]*`. Label names beginning with `__`
-are reserved for internal use.
+ラベルによって、Prometheusの多次元データモデルが可能になっている。
+同じ名前のメトリック名に対して与えられたラベルの組み合わせによって、そのメトリックの特定の具体的な要素（例えば、`/api/tracks`に対する全ての`POST`メソッドのHTTPリクエスト）を指定する。 
+クエリ言語によって、これらの次元に基づいた抽出と集約が可能となる。
+ラベルの値を変更したり、ラベルを追加・削除したりすると、新しい時系列が作成される。
 
-Label values may contain any Unicode characters.
+ラベル名は、ASCIIの文字、数字、およびアンダースコアを含むことが可能で、
+正規表現`[a-zA-Z_][a-zA-Z0-9_]*`にマッチしなければならない。
+`__`で始まるラベル名は内部利用のために予約されている。
 
-See also the [best practices for naming metrics and labels](/docs/practices/naming/).
+ラベルの値は、任意のUnicode文字を含むことが可能である。
 
-## Samples
-Samples form the actual time series data. Each sample consists of:
+[メトリック名とラベル名ベストプラクティス](/docs/practices/naming/)も参照すること。
 
-   * a float64 value
-   * a millisecond-precision timestamp
+## サンプル
 
-## Notation
-Given a metric name and a set of labels, time series are frequently identified
-using this notation:
+サンプルが実際の時系列データを構成する。
+各サンプルは以下のデータから成る。
+
+   * float64の値
+   * ミリ秒精度のタイムスタンプ
+
+## 記法
+
+メトリック名とラベルの集合に対して、時系列は、よく、この記法を用いて指定される。
 
     <metric name>{<label name>=<label value>, ...}
 
-For example, a time series with the metric name `api_http_requests_total` and
-the labels `method="POST"` and `handler="/messages"` could be written like
-this:
+例えば、`api_http_requests_total`というメトリック名および`method="POST"`と`handler="/messages"`というラベルを持つ時系列は下記のように記述される。
+
 
     api_http_requests_total{method="POST", handler="/messages"}
 
-This is the same notation that [OpenTSDB](http://opentsdb.net/) uses.
+これは、[OpenTSDB](http://opentsdb.net/)で用いられる記法と同じである。

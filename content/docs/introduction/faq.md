@@ -4,113 +4,97 @@ sort_rank: 5
 toc: full-width
 ---
 
-# Frequently Asked Questions
+# よくある質問
 
-## General
+## 一般
 
-### What is Prometheus?
+### Prometheusとは何か？
 
-Prometheus is an open-source systems monitoring and alerting toolkit
-with an active ecosystem. See the [overview](/docs/introduction/overview/).
+Prometheusは、活発なエコシステムを持つ、オープンソースのシステム監視およびアラートのツールキットである。
+[概要](/docs/introduction/overview/)を参照。
 
-### How does Prometheus compare against other monitoring systems?
 
-See the [comparison](/docs/introduction/comparison/) page.
+### Prometheusを他の監視システムと比較してどうか？
 
-### What dependencies does Prometheus have?
+[比較](/docs/introduction/comparison/)のページを参照。
 
-The main Prometheus server runs standalone and has no external dependencies.
+### Prometheusはどのような依存があるか？
 
-### Can Prometheus be made highly available?
+Prometheusサーバーはスタンドアローンで稼働し、外部の依存はない。
 
-Yes, run identical Prometheus servers on two or more separate machines.
-Identical alerts will be deduplicated by the [Alertmanager](https://github.com/prometheus/alertmanager).
+### Prometheusを高可用にすることはできるか？
 
-For [high availability of the Alertmanager](https://github.com/prometheus/alertmanager#high-availability),
-you can run multiple instances in a
-[Mesh cluster](https://github.com/weaveworks/mesh) and configure the Prometheus
-servers to send notifications to each of them.
+はい。同一のPrometheusサーバーを2つ以上の別々のマシンで稼働させればよい。
+同一のアラートは[Alertmanager](https://github.com/prometheus/alertmanager)が重複排除をする。
 
-### I was told Prometheus “doesn't scale”.
+[Alertmanagerを高可用にする](https://github.com/prometheus/alertmanager#high-availability)には、[Mesh cluster](https://github.com/weaveworks/mesh)内で複数のインスタンスを実行し、Prometheusがそれぞれのインスタンスに通知を送信するように設定することができる。
 
-There are in fact various ways to scale and federate
-Prometheus. Read [Scaling and Federating Prometheus](https://www.robustperception.io/scaling-and-federating-prometheus/)
-on the Robust Perception blog to get started.
+### Prometheusはスケールしないと言われました
 
-### What language is Prometheus written in?
+実際には、Prometheusをスケールさせたり連合(federate)させる様々な方法がある。
+Robust Perception blogの[Scaling and Federating Prometheus](https://www.robustperception.io/scaling-and-federating-prometheus/)を参照すること。
 
-Most Prometheus components are written in Go. Some are also written in Java,
-Python, and Ruby.
+### Prometheusはどの言語で書かれていますか？
 
-### How stable are Prometheus features, storage formats, and APIs?
+PrometheusのほとんどのコンポーネントはGoで書かれている。
+いくつかはJava、Python、Rubyでも書かれている。
 
-All repositories in the Prometheus GitHub organization that have reached
-version 1.0.0 broadly follow
-[semantic versioning](http://semver.org/). Breaking changes are indicated by
-increments of the major version. Exceptions are possible for experimental
-components, which are clearly marked as such in announcements.
+### Prometheusの機能やストレージの形式、APIはどれぐらい安定していますか？
 
-Even repositories that have not yet reached version 1.0.0 are, in general, quite
-stable. We aim for a proper release process and an eventual 1.0.0 release for
-each repository. In any case, breaking changes will be pointed out in release
-notes (marked by `[CHANGE]`) or communicated clearly for components that do not
-have formal releases yet.
+GitHubのPrometheusオーガニゼーションにあるバージョン1.0.0以上の全てのリポジトリは[セマンティック バージョニング](https://semver.org/lang/ja/)に従っている。
+破壊的な変更は、メジャーバージョンのインクリメントで表される。
+実験的なコンポーネントでは、例外がありうるが、アナウンスでその旨が明確に記される。
 
-### Why do you pull rather than push?
+バージョン1.0.0にまだ達していないリポジトリでも、一般的に、かなり安定している。
+各リポジトリで適切なリリースプロセスと1.0.0リリースを目指している。
+破壊的な変更は何れにしてもリリースノートで示され（`[CHANGE]`と記される）、正式にリリースされていないコンポーネントに対しては、明確に伝えられる。
 
-Pulling over HTTP offers a number of advantages:
+### なぜpushではなくpullなのか？
 
-* You can run your monitoring on your laptop when developing changes.
-* You can more easily tell if a target is down.
-* You can manually go to a target and inspect its health with a web browser.
+HTTPを通してpullすることには、たくさんの利点がある。
 
-Overall, we believe that pulling is slightly better than pushing, but it should
-not be considered a major point when considering a monitoring system.
+* 開発中に自分のラップトップから監視を実行できる
+* 監視対象がダウンしていることがより簡単に分かる
+* Webブラウザで監視対象を開き、手動でその状態を調べることができる
 
-For cases where you must push, we offer the [Pushgateway](/docs/instrumenting/pushing/).
+概して、pushよりもpullする方が少しだけ良いと信じているが、監視システムを検討する際の重要な点ではないであろう。
 
-### How to feed logs into Prometheus?
+pushしなければならない場合のために、[Pushgateway](/docs/instrumenting/pushing/)を提供している。
 
-Short answer: Don't! Use something like the [ELK stack](https://www.elastic.co/products) instead.
+### どうやってPrometheusにログを取り込みますか？
 
-Longer answer: Prometheus is a system to collect and process metrics, not an
-event logging system. The Raintank blog post
-[Logs and Metrics and Graphs, Oh My!](https://blog.raintank.io/logs-and-metrics-and-graphs-oh-my/)
-provides more details about the differences between logs and metrics.
+短い答え：やらないで下さい。[ELK stack](https://www.elastic.co/jp/products/)のようなものを使うこと。
 
-If you want to extract Prometheus metrics from application logs, Google's
-[mtail](https://github.com/google/mtail) might be helpful.
+長い答え：Prometheusはメトリクスを集めて処理するシステムであって、イベントロギングシステムではない。
+Raintankのブログ記事[Logs and Metrics and Graphs, Oh My!](https://blog.raintank.io/logs-and-metrics-and-graphs-oh-my/)で、ログとメトリクスの違いについて詳細が説明されている。
 
-### Who wrote Prometheus?
+アプリケーションのログからPrometheusのメトリクスを抽出したい場合は、Googleの[mtail](https://github.com/google/mtail)が役に立つであろう。
 
-Prometheus was initially started privately by
-[Matt T. Proud](http://www.matttproud.com) and
-[Julius Volz](http://juliusv.com). The majority of its
-initial development was sponsored by [SoundCloud](https://soundcloud.com).
+### 誰がPrometheusを書きましたか？
 
-It's now maintained and extended by a wide range of companies and individuals.
+Prometheusは、最初は、[Matt T. Proud](http://www.matttproud.com)と[Julius Volz](http://juliusv.com)によって個人的に始められた。
+初期の開発の大部分は[SoundCloud](https://soundcloud.com)に支援されていた。
 
-### What license is Prometheus released under?
+今は、幅広い企業や個人によって保守・拡張されている。
 
-Prometheus is released under the
-[Apache 2.0](https://github.com/prometheus/prometheus/blob/master/LICENSE) license.
+### どのようなライセンスの下でPrometheusはリリースされていますか？
 
-### What is the plural of Prometheus?
+Prometheusは[Apache 2.0](https://github.com/prometheus/prometheus/blob/master/LICENSE)ライセンスの下でリリースされている。
 
-After [extensive research](https://youtu.be/B_CDeYrqxjQ), it has been determined
-that the correct plural of 'Prometheus' is 'Prometheis'.
+### Prometheusの複数形は？
 
-### Can I reload Prometheus's configuration?
+[広範囲の調査](https://youtu.be/B_CDeYrqxjQ)の後で、正しいPrometheusの複数形はPrometheisであると確定した。
 
-Yes, sending `SIGHUP` to the Prometheus process or an HTTP POST request to the
-`/-/reload` endpoint will reload and apply the configuration file. The
-various components attempt to handle failing changes gracefully.
+### Prometheusの設定をリロードすることはできますか？
 
-### Can I send alerts?
+はい、Prometheusのプロセスに`SIGHUP`を送るか、エンドポイント`/-/reload`にHTTP POSTリクエスト送ると、設定ファイルをリロードして適用します。
+様々なコンポーネントが、変更の失敗をうまく扱うように試みます。
 
-Yes, with the [Alertmanager](https://github.com/prometheus/alertmanager).
+### アラートを送信できますか？
 
-Currently, the following external systems are supported:
+[Alertmanager](https://github.com/prometheus/alertmanager)でできる。
+
+現在、以下の外部システムがサポートされている。
 
 * Email
 * Generic Webhooks
@@ -120,123 +104,90 @@ Currently, the following external systems are supported:
 * [Pushover](https://pushover.net/)
 * [Slack](https://slack.com/)
 
-### Can I create dashboards?
+### ダッシュボードを作成できますか？
 
-Yes, we recommend [Grafana](/docs/visualization/grafana/) for production
-usage. There are also [Console templates](/docs/visualization/consoles/).
+できる。プロダクションでの利用には[Grafana](/docs/visualization/grafana/)を推奨している。
+[コンソールテンプレート](/docs/visualization/consoles/)もある。
 
-### Can I change the timezone? Why is everything in UTC?
+### タイムゾーンを変更できるか？なぜ全てUTCなのか？
 
-To avoid any kind of timezone confusion, especially when the so-called
-daylight saving time is involved, we decided to exclusively use Unix
-time internally and UTC for display purposes in all components of
-Prometheus. A carefully done timezone selection could be introduced
-into the UI. Contributions are welcome. See
-[issue #500](https://github.com/prometheus/prometheus/issues/500)
-for the current state of this effort.
+タイムゾーンに関するあらゆる混乱（特に、いわゆるdaylight saving timeに関わる混乱）を避けるために、Prometheusの全てのコンポーネントで、内部的にはUnix timeのみを、表示にはUTCのみを用いると決められている。UIには、慎重に選ばれたタイムゾーンを導入することができるかもしれない。この試みに関する現状は[issue #500](https://github.com/prometheus/prometheus/issues/500)を参照のこと。
 
-## Instrumentation
+## メトリクス組み込み
 
-### Which languages have instrumentation libraries?
+### どの言語にメトリクスを組み込むためのライブラリがありますか？
 
-There are a number of client libraries for instrumenting your services with
-Prometheus metrics. See the [client libraries](/docs/instrumenting/clientlibs/)
-documentation for details.
+自分のサービスにPrometheusのメトリクスを組み込むためのライブラリはたくさんある。
+詳細は[クライアントライブラリ](/docs/instrumenting/clientlibs/)のドキュメントを参照すること。
 
-If you are interested in contributing a client library for a new language, see
-the [exposition formats](/docs/instrumenting/exposition_formats/).
+新しい言語のためのクライアントライブラリに貢献する気がある場合、[出力フォーマット](/docs/instrumenting/exposition_formats/)を参照すること。
 
-### Can I monitor machines?
+### マシンを監視することはできますか？
 
-Yes, the [Node Exporter](https://github.com/prometheus/node_exporter) exposes
-an extensive set of machine-level metrics on Linux and other Unix systems such
-as CPU usage, memory, disk utilization, filesystem fullness, and network
-bandwidth.
+できる。[Node Exporter](https://github.com/prometheus/node_exporter)は、Linuxや他のUnixシステムのCPU使用率、メモリ、ディスク利用率、ファイルシステム、ネットワーク帯域のような広範にわたるマシンレベルのメトリクスを出力する。
 
-### Can I monitor network devices?
+### ネットワークデバイスを監視することはできますか？
 
-Yes, the [SNMP Exporter](https://github.com/prometheus/snmp_exporter) allows
-monitoring of devices that support SNMP.
+できる。[SNMP Exporter](https://github.com/prometheus/snmp_exporter)によってSNMPをサポートしているデバイスを監視することができる。
 
-### Can I monitor batch jobs?
+### バッチジョブを関することはできますか？
 
-Yes, using the [Pushgateway](/docs/instrumenting/pushing/). See also the
-[best practices](/docs/practices/instrumentation/#batch-jobs) for monitoring batch
-jobs.
+[Pushgateway](/docs/instrumenting/pushing/)を使うことでできる。
+バッチジョブの監視について[ベストプラクティス](/docs/instrumenting/pushing/)も参照すること。
 
-### What applications can Prometheus monitor out of the box?
+### どんなアプリケーションがPrometheusですぐに監視できますか？
 
-See [the list of exporters and integrations](/docs/instrumenting/exporters/).
+[exporterとインテグレーションの一覧](/docs/instrumenting/exporters/)を参照すること。
 
-### Can I monitor JVM applications via JMX?
+### JMXでJVMアプリケーションを監視できますか？
 
-Yes, for applications that you cannot instrument directly with the Java client, you can use the [JMX Exporter](https://github.com/prometheus/jmx_exporter)
-either standalone or as a Java Agent.
+Javaクライアントで直接メトリクスを組み込めないアプリケーションに対しては、スタンドアロンでもJava Agentとしてでも[JMX Exporter](https://github.com/prometheus/jmx_exporter)を利用することができる。
 
-### What is the performance impact of instrumentation?
+### メトリクスを組み込んだ場合のパフォーマンスへの影響は？
 
-Performance across client libraries and languages may vary. For Java,
-[benchmarks](https://github.com/prometheus/client_java/blob/master/benchmark/README.md)
-indicate that incrementing a counter/gauge with the Java client will take
-12-17ns, depending on contention. This is negligible for all but the most
-latency-critical code.
+パフォーマンスは、クライアントライブラリや言語によって様々であろう。
+Javaに関しては、[ベンチマーク](https://github.com/prometheus/client_java/blob/master/benchmark/README.md)によると、Javaクライアントのカウンター/ゲージを一つインクリメントするのに12〜17nsかかることが示唆されている。
+これは、レイテンシーが致命的なほとんどのコード以外全てで無視できる。
 
-## Troubleshooting
+## 問題解決
 
-### My Prometheus 1.x server takes a long time to start up and spams the log with copious information about crash recovery.
+### バージョン1.xのPrometheusサーバーが起動するのに長い時間がかかり、クラッシュ復旧に関するおびただしいログを出力します
 
-You are suffering from an unclean shutdown. Prometheus has to shut down cleanly
-after a `SIGTERM`, which might take a while for heavily used servers. If the
-server crashes or is killed hard (e.g. OOM kill by the kernel or your runlevel
-system got impatient while waiting for Prometheus to shutdown), a crash
-recovery has to be performed, which should take less than a minute under normal
-circumstances, but can take quite long under certain circumstances. See
-[crash recovery](/docs/prometheus/1.8/storage/#crash-recovery) for details.
+Prometheusは`SIGTERM`の後で綺麗にシャットダウンしなければならず、激しく使われているサーバーではそれにしばらく時間がかかることもある。サーバーがクラッシュしたり、強制的に終了させられたり（例えば、メモリ不足でカーネルにkillされたり、Prometheusのシャットダウンの途中でランレベルシステムが待ちきれなくなったり）すると、クラッシュからの復旧が実行される。
+これは普通の状況下では1分もかからないが、ある種の状況下ではかなり長い時間がかかることもあり得る。
+詳細は、[crash recovery](/docs/prometheus/1.8/storage/#crash-recovery)を参照すること。
 
-### My Prometheus 1.x server runs out of memory.
+### Prometheus 1.xのサーバーがメモリ不足になります
 
-See [the section about memory usage](/docs/prometheus/1.8/storage/#memory-usage)
-to configure Prometheus for the amount of memory you have available.
+Prometheusが利用可能なメモリ量を設定するために、[メモリ利用についてのセクション](/docs/prometheus/1.8/storage/#memory-usage)を参照すること。
 
-### My Prometheus 1.x server reports to be in “rushed mode” or that “storage needs throttling”.
+### Prometheus 1.xのサーバーが“rushed mode”であるあるいは“storage needs throttling”だとレポートします
 
-Your storage is under heavy load. Read
-[the section about configuring the local storage](/docs/prometheus/1.8/storage/)
-to find out how you can tweak settings for better performance.
+ストレージの負荷が高くなっている。
+パフォーマンスをよくするためにどう設定を調整するか理解するために[ローカルストレージの設定についてのセクション](/docs/prometheus/1.8/storage/)を読むこと。
 
-## Implementation
+## 実装
 
-### Why are all sample values 64-bit floats? I want integers.
+### 全ての値が64-bit floatなのはなぜですか？integerがいいんですが…
 
-We restrained ourselves to 64-bit floats to simplify the design. The
-[IEEE 754 double-precision binary floating-point
-format](http://en.wikipedia.org/wiki/Double-precision_floating-point_format)
-supports integer precision for values up to 2<sup>53</sup>. Supporting
-native 64 bit integers would (only) help if you need integer precision
-above 2<sup>53</sup> but below 2<sup>63</sup>. In principle, support
-for different sample value types (including some kind of big integer,
-supporting even more than 64 bit) could be implemented, but it is not
-a priority right now. A counter, even if incremented one million times per
-second, will only run into precision issues after over 285 years.
+設計を単純にするために64-bitのfloatに制限している。
+[IEEE 754 倍精度浮動小数点数](https://ja.wikipedia.org/wiki/倍精度浮動小数点数)は、2^53までの精度の整数をサポートしている。
+ネイティブの64bit integerをサポートしても、2^53〜2^63の精度の整数が必要な場合に役に立つだけである。
+原理的には、他の型（64 bitよりも大きな整数の方を含む）のサポートは、実装可能ではあるが、現時点の優先事項ではない。
+カウンターは、秒間100万回インクリメントされても、285年以上経たないと精度の問題にぶつからない。
 
-### Why don't the Prometheus server components support TLS or authentication? Can I add those?
+### なぜPrometheusサーバーはTLSや認証をサポートしないのですか？追加できますか？
 
-Note: The Prometheus team has changed their stance on this during its development summit on
-August 11, 2018, and support for TLS and authentication in serving endpoints is now on the
-[project's roadmap](/docs/introduction/roadmap/#tls-and-authentication-in-http-serving-endpoints).
-This document will be updated once code changes have been made.
+注意：Prometheusチームは、2018年8月11日のdevelopment summitでこれに関する姿勢を変更した。
+提供しているエンドポイントのTLSと認証のサポートは[プロジェクトのロードマップ](/docs/introduction/roadmap/#tls-and-authentication-in-http-serving-endpoints)に記載されている。
+コードが変更されたら、このドキュメントは更新されるだろう。
 
-While TLS and authentication are frequently requested features, we have
-intentionally not implemented them in any of Prometheus's server-side
-components. There are so many different options and parameters for both (10+
-options for TLS alone) that we have decided to focus on building the best
-monitoring system possible rather than supporting fully generic TLS and
-authentication solutions in every server component.
+TLSと認証はよくリクエストされる機能ではあるが、意図的に、Prometheusのサーバーサイドのコンポーネントに実装してこなかった。
+どちらも非常にたくさんの選択肢とパラメーターがある（TLSだけでも10以上ある）ので、サーバーコンポーネントで完全に一般的なTLSと認証をサポートするのではなく、可能な限り最善の監視システムを構築することに集中しようと決めていた。
 
-If you need TLS or authentication, we recommend putting a reverse proxy in
-front of Prometheus. See, for example [Adding Basic Auth to Prometheus with
-Nginx](https://www.robustperception.io/adding-basic-auth-to-prometheus-with-nginx/).
+TLSや認証が必要な場合、Prometheusの前にリバースプロキシを置くことを推奨する。
+例えば、[Adding Basic Auth to Prometheus with
+Nginx](https://www.robustperception.io/adding-basic-auth-to-prometheus-with-nginx/)を参照すること。
 
-This applies only to inbound connections. Prometheus does support
-[scraping TLS- and auth-enabled targets](/docs/operating/configuration/#%3Cscrape_config%3E), and other
-Prometheus components that create outbound connections have similar support.
+これはPrometheusへの接続に限った話である。
+Prometheusは、[TLSや認証がかかったターゲットのスクレイプ](/docs/operating/configuration/#%3Cscrape_config%3E)をサポートしている。他のPrometheusコンポーネントにも同様のサポートがある。

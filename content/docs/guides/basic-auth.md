@@ -1,35 +1,40 @@
 ---
-title: Basic auth
+title: Basic認証
 ---
 
-# Securing Prometheus API and UI endpoints using basic auth
+# Basic認証でPrometheusのAPIとUIを安全にする
 
-Prometheus does not directly support [basic authentication](https://en.wikipedia.org/wiki/Basic_access_authentication) (aka "basic auth") for connections to the Prometheus [expression browser](/docs/visualization/browser) and [HTTP API](/docs/prometheus/latest/querying/api). If you'd like to enforce basic auth for those connections, we recommend using Prometheus in conjunction with a [reverse proxy](https://www.nginx.com/resources/glossary/reverse-proxy-server/) and applying authentication at the proxy layer. You can use any reverse proxy you like with Prometheus, but in this guide we'll provide an [nginx example](#nginx-example).
+Prometheusは、expressionブラウザとHTTP APIの接続に対して、[Basic認証](https://ja.wikipedia.org/wiki/Basic認証)を直接サポートしていない。
+それらの接続にBasic認証を要求したいなら、Prometheusをリバースプロキシと組み合わせて使い、プロキシレイヤーで認証を適用することを推奨する。
+自分の好きなリバースプロキシをPrometheusと共に利用することができるが、このガイドでは、[nginxの例](nginxの例)を提供する。
 
-NOTE: Although basic auth connections *to* Prometheus instances are not supported, basic auth is supported for connections *from* Prometheus instances to [scrape targets](../prometheus/latest/configuration/configuration/#<scrape_config>).
+NOTE: PrometheusインスタンスへのBasic認証での接続はサポートされていないが、Prometheus*から*[監視対象](../prometheus/latest/configuration/configuration/#<scrape_config>)への接続ではBasic認証がサポートされている。
 
-## nginx example
+## nginxの例
 
-Let's say that you want to run a Prometheus instance behind an [nginx](https://www.nginx.com/) server running on `localhost:12321`, and for all Prometheus endpoints to be available via the `/prometheus` endpoint. The full URL for Prometheus' `/metrics` endpoint would thus be:
+`localhost:12321`で稼働しているnginxサーバーの後ろでPrometheusインスタンスを運用し、全てのPrometheusのエンドポイントが`/prometheus`を通して利用可能にしたいとする。
+つまり、Prometheusのエンドポイント`/metrics`に対する完全なURLは、以下のようになるだろう。
 
 ```
 http://localhost:12321/prometheus/metrics
 ```
 
-Let's also say that you want to require a username and password from all users accessing the Prometheus instance. For this example, use `admin` as the username and choose any password you'd like.
+また、Prometheusインスタンスにアクセスする全てのユーザーにユーザー名とパスワードを要求したいとする。
+この例では、ユーザー名として`admin`を用い、好きなパスワードを選ぶこととする。
 
-First, create a `.htpasswd` file to store the username/password using the [`htpasswd`](https://httpd.apache.org/docs/2.4/programs/htpasswd.html) tool and store it in the `/etc/nginx` directory:
+まず、[`htpasswd`](https://httpd.apache.org/docs/2.4/programs/htpasswd.html)を利用し、ユーザー名/パスワードを保存するためのファイル`.htpasswd`を作成し、ディレクトリ`/etc/nginx`に保存する。
 
 ```bash
 mkdir -p /etc/nginx
 htpasswd -c /etc/nginx/.htpasswd admin
 ```
 
-NOTE: This example uses `/etc/nginx` as the location of the nginx configuration files, including the `.htpasswd` file, but this will vary based on the installation. Other [common nginx config directories](http://nginx.org/en/docs/beginners_guide.html) include `/usr/local/nginx/conf` and `/usr/local/etc/nginx`.
+NOTE: この例では、`.htpasswd`を含むnginxの設定ファイルの場所として、`/etc/nginx`を用いるが、インストールの仕方によって異なるであろう。他のよくあるnginxの設定ディレクトリは、`/usr/local/nginx/conf`と`/usr/local/etc/nginx`が挙げられる。
 
-## nginx configuration
+## nginxの設定
 
-Below is an example [`nginx.conf`](https://www.nginx.com/resources/wiki/start/topics/examples/full/) configuration file (stored at `/etc/nginx/.htpasswd`). With this configuration, nginx will enforce basic auth for all connections to the `/prometheus` endpoint (which proxies to Prometheus):
+設定ファイル[`nginx.conf`](https://www.nginx.com/resources/wiki/start/topics/examples/full/)の例を以下に示す。
+この設定で、nginxは、Prometheusへプロキシするエンドポイント`/prometheus`への全ての接続にBasic認証を要求するようになる。
 
 ```conf
 http {
@@ -48,15 +53,16 @@ http {
 events {}
 ```
 
-Start nginx using the configuration from above:
+上記の設定を用いて、nginxを起動する。
 
 ```bash
 nginx -c /etc/nginx/nginx.conf
 ```
 
-## Prometheus configuration
+## Prometheusの設定
 
-When running Prometheus behind the nginx proxy, you'll need to set the external URL to `http://localhost:12321/prometheus` and the route prefix to `/`:
+nginxプロキシの後ろでPrometheusを稼働させる際には、外部URLを`http://localhost:12321/prometheus`に、ルートプリフィックスを`/`にセットする必要がある。
+
 
 ```bash
 prometheus \
@@ -65,24 +71,26 @@ prometheus \
   --web.route-prefix="/"
 ```
 
-## Testing
+## テスト
 
-You can use cURL to interact with your local nginx/Prometheus setup. Try this request:
+cURLを利用してローカルで構築したnginx/Prometheusに接続できる。このリクエストで試してみよう。
 
 ```bash
 curl --head http://localhost:12321/prometheus/graph
 ```
 
-This will return a `401 Unauthorized` response because you've failed to supply a valid username and password. The response will also contain a `WWW-Authenticate: Basic realm="Prometheus"` header supplied by nginx, indicating that the `Prometheus` basic auth realm, specified by the `auth_basic` parameter for nginx, is enforced.
+これは、正当なユーザー名とパスワードを提供していないので、レスポンス`401 Unauthorized`を返すだろう。
+このレスポンスは、ヘッダー`WWW-Authenticate: Basic realm="Prometheus"`も返すだろう。
+これは、パラメーター`auth_basic`で指定されたBasic認証の領域`Prometheus`が要求されていることを示す。
 
-To successfully access Prometheus endpoints using basic auth, for example the `/metrics` endpoint, supply the proper username using the `-u` flag and supply the password when prompted:
+Basic認証によるPrometheusエンドポイントへのアクセスが成功するには、適切なユーザー名をフラグ`-u`で指定し、プロンプトでパスワードを入力する。
 
 ```bash
 curl -u admin http://localhost:12321/prometheus/metrics
 Enter host password for user 'admin':
 ```
 
-That should return Prometheus metrics output, which should look something like this:
+何か以下のようなPrometheusの出力を返すはずである。
 
 ```
 # HELP go_gc_duration_seconds A summary of the GC invocation durations.
@@ -93,6 +101,6 @@ go_gc_duration_seconds{quantile="0.5"} 0.0004485
 ...
 ```
 
-## Summary
+## まとめ
 
-In this guide, you stored a username and password in a `.htpasswd` file, configured nginx to use the credentials in that file to authenticate users accessing Prometheus' HTTP endpoints, started up nginx, and configured Prometheus for reverse proxying.
+このガイドでは、ユーザー名とパスワードを`.htpasswd`に保存し、PrometheusのHTTPエンドポイントにアクセスするユーザーを認証するためにそのファイルの情報を使うようにnginxを設定し、Prometheusをリバースプロキシのために設定した。

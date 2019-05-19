@@ -1,57 +1,54 @@
 ---
-title: Notification template reference
+title: 通知テンプレートのリファレンス
 sort_rank: 7
 ---
-# Notification Template Reference
+# 通知テンプレートのリファレンス
 
-Prometheus creates and sends alerts to the Alertmanager which then sends notifications out to different receivers based on their labels.
-A receiver can be one of many integrations including: Slack, PagerDuty, email, or a custom integration via the generic webhook interface.
+Prometheusはアラートを作成しAlertmanagerに送信する。Alertmanagerは、アラートのラベルに基づいて様々なレシーバーに通知を送る。レシーバーは、Slack、PagerDuty、eメール、一般的なwebhookインターフェースを介した連携先の一つである。
 
-The notifications sent to receivers are constructed via templates. The Alertmanager comes with default templates but they can also be customized.
-To avoid confusion it's important to note that the Alertmanager templates differ from [templating in Prometheus](https://prometheus.io/docs/visualization/template_reference/), however Prometheus templating also includes the templating in alert rule labels/annotations.
+レシーバーの送信される通知は、テンプレートによって構成される。Alertmanagerには、デフォルトのテンプレートが備えられているが、テンプレートをカスタマイズすることもできる。
+Prometheusでアラートルールのラベル/アノテーションにもテンプレーティングが含まれるが、Alertmanagerテンプレートは[Prometheusでのテンプレーティング](https://prometheus.io/docs/visualization/template_reference/)とは別物であることに注意するのが、混乱を避けるために重要である。
 
+Alertmanagerの通知のテンプレートは、[Go templating](http://golang.org/pkg/text/template)を基にしている。テキストとして評価されるフィールドもあるし、エスケープに影響するHTMLとして評価されるフィールドもあることに注意すること。
 
-The Alertmanager's notification templates are based on the [Go templating](http://golang.org/pkg/text/template) system.
-Note that some fields are evaluated as text, and others as HTML which will affect escaping.
-
-# Data Structures
+# データ構造
 
 ## Data
 
-`Data` is the structure passed to notification templates and webhook pushes.
+`Data`は、通知テンプレートとwebhookに渡されるデータ構造である。
 
-| Name          | Type     | Notes    |
+| 名前          | 型     | 備考    |
 | ------------- | ------------- | -------- |
-| Receiver | string | Defines the receiver's name that the notification will be sent to (slack, email etc.). |
-| Status | string | Defined as firing if at least one alert is firing, otherwise resolved. |
-| Alerts | [Alert](#alert) | List of alert objects ([see below](#alert)). |
-| GroupLabels | [KV](#kv) | The labels these alerts were grouped by. |
-| CommonLabels | [KV](#kv) | The labels common to all of the alerts. |
-| CommonAnnotations | [KV](#kv) | Set of common annotations to all of the alerts. Used for longer additional strings of information about the alert. |
-| ExternalURL | string | Backlink to the Alertmanager that sent the notification. |
+| Receiver | string | 通知が送信されるレシーバー（Slack、eメールなど）の名前を定義する |
+| Status | string | 少なくとも一つのアラートがfiringであればfiring、そうでなければresolvedと定義される |
+| Alerts | [Alert](#alert) | [下記のAlert](#alert)オブジェクトのリスト |
+| GroupLabels | [KV](#kv) | これらのアラートがグルーピングされるラベル |
+| CommonLabels | [KV](#kv) | 全てのアラートに共通のラベル |
+| CommonAnnotations | [KV](#kv) | 全てのアラートの共通のアノテーション。より長く追加的なアラートに関する情報の文字列に利用される |
+| ExternalURL | string | 通知を送ったAlertmanagerへ戻るためのリンク |
 
 ## Alert
 
-`Alert` holds one alert for notification templates.
+`Alert`は、通知のテンプレートのための一つのアラートの情報を持っている。
 
-| Name          | Type     | Notes    |
+| 名前          | 型     | 備考    |
 | ------------- | ------------- | -------- |
-| Status | string | Defines whether or not the alert is resolved or currently firing. |
-| Labels | [KV](#kv) | A set of labels to be attached to the alert. |
-| Annotations | [KV](#kv) | A set of annotations for the alert. |
-| StartsAt | time.Time | The time the alert started firing. If omitted, the current time is assigned by the Alertmanager. |
-| EndsAt | time.Time | Only set if the end time of an alert is known. Otherwise set to a configurable timeout period from the time since the last alert was received. |
-| GeneratorURL | string | A backlink which identifies the causing entity of this alert. |
+| Status | string | アラートがresolvedなのかfiringなのかを定義する |
+| Labels | [KV](#kv) | アラートに付与されたラベルの集合 |
+| Annotations | [KV](#kv) | アラートのアノテーションの集合 |
+| StartsAt | time.Time | アラートがfiringになり始めた時刻。もしなければ、Alertmanagerによって現在時刻が付与される |
+| EndsAt | time.Time | アラートの終了時刻が分かる場合のみセットされる。そうでなければ、最後にアラートが受信されてからの設定可能なタイムアウトの間隔にセットされる |
+| GeneratorURL | string | このアラートを起こしたエンティティを特定するリンク |
 
 ## KV
 
-`KV` is a set of key/value string pairs used to represent labels and annotations.
+`KV`は、ラベルとアノテーションを表すためのkey/valueの文字列ペアの集合である。
 
 ```
 type KV map[string]string
 ```
 
-Annotation example containing two annotations:
+二つのアノテーションを含むアノテーションの例
 
 ```
 {
@@ -60,30 +57,28 @@ Annotation example containing two annotations:
 }
 ```
 
-In addition to direct access of data (labels and annotations) stored as KV, there are also methods for sorting, removing, and viewing the LabelSets:
+`KV`として保存されているデータへの直接のアクセスに加えて、ソート、削除、LabelSetsを見るためのメソッドがある。
 
-### KV methods
-| Name          | Arguments     | Returns  | Notes    |
+### KVのメソッド
+|  名前         | 引数          | 戻り値   | 備考     |
 | ------------- | ------------- | -------- | -------- |
-| SortedPairs | - | Pairs (list of key/value string pairs.) | Returns a sorted list of key/value pairs. |
-| Remove | []string | KV | Returns a copy of the key/value map without the given keys. |
-| Names | - | []string | Returns the names of the label names in the LabelSet. |
-| Values | - | []string | Returns a list of the values in the LabelSet. |
+| SortedPairs | - | Pairs (list of key/value string pairs.) | ソートされたkey/valueペアのリストを返す |
+| Remove | []string | KV | 指定されたキーを削除したkey/valueのマップのコピーを返す |
+| Names | - | []string | LabelSet中のラベル名を返す |
+| Values | - | []string | LabelSet中の値のリストを返す |
 
-# Functions
+# 関数
 
-Note the [default
-functions](http://golang.org/pkg/text/template/#hdr-Functions) also provided by Go
-templating.
+Go templatingによって[default functions](http://golang.org/pkg/text/template/#hdr-Functions)も提供されていることに注意。
 
-## Strings
+## 文字列
 
-| Name          | Arguments     | Returns  | Notes    |
+|  名前         | 引数          | 戻り値   | 備考     |
 | ------------- | ------------- | -------- | -------- |
-| title | string |[strings.Title](http://golang.org/pkg/strings/#Title), capitalises first character of each word. |
-| toUpper | string | [strings.ToUpper](http://golang.org/pkg/strings/#ToUpper), converts all characters to upper case. |
-| toLower | string | [strings.ToLower](http://golang.org/pkg/strings/#ToLower), converts all characters to lower case. |
-| match | pattern, string | [Regexp.MatchString](https://golang.org/pkg/regexp/#MatchString). Match a string using Regexp. |
-| reReplaceAll | pattern, replacement, text | [Regexp.ReplaceAllString](http://golang.org/pkg/regexp/#Regexp.ReplaceAllString) Regexp substitution, unanchored. |
-| join | sep string, s []string | [strings.Join](http://golang.org/pkg/strings/#Join), concatenates the elements of s to create a single string. The separator string sep is placed between elements in the resulting string. (note: argument order inverted for easier pipelining in templates.) |
-| safeHtml | text string | [html/template.HTML](https://golang.org/pkg/html/template/#HTML), Marks string as HTML not requiring auto-escaping. |
+| title | string |[strings.Title](http://golang.org/pkg/strings/#Title), 各単語の最初の文字を大文字にする |
+| toUpper | string | [strings.ToUpper](http://golang.org/pkg/strings/#ToUpper), 全ての文字を大文字にする |
+| toLower | string | [strings.ToLower](http://golang.org/pkg/strings/#ToLower), 全ての文字を小文字にする |
+| match | pattern, string | [Regexp.MatchString](https://golang.org/pkg/regexp/#MatchString). Regexpを利用して文字列のマッチングをする |
+| reReplaceAll | pattern, replacement, text | [Regexp.ReplaceAllString](http://golang.org/pkg/regexp/#Regexp.ReplaceAllString) 正規表現置換。アンカーなし |
+| join | sep string, s []string | [strings.Join](http://golang.org/pkg/strings/#Join), `s`の要素を連結して一つの文字列を作る。結果の文字列で、要素間には文字列`sep`が置かれる。テンプレートでのパイプラインを簡単にするために、引数の順序が逆になっていることに注意すること |
+| safeHtml | text string | [html/template.HTML](https://golang.org/pkg/html/template/#HTML), 自動エスケープを必要としないように、文字列をHTMLとしてマークする |
